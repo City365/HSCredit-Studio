@@ -1,0 +1,13 @@
+FROM hscredit-studio-backend:latest AS worker
+
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git \
+        docker.io \
+    && rm -rf /var/lib/apt/lists/* && \
+    useradd -m -u 10001 appuser
+USER appuser
+
+# Celery Worker 默认启动命令
+CMD ["celery", "-A", "hscredit_studio.celery_app", "worker", \
+     "--loglevel=INFO", "--concurrency=4", "-Q", "nodes-general"]

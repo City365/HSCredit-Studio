@@ -1,0 +1,29 @@
+# Staging 环境配置
+
+image:
+  repository: ghcr.io/city365/hscredit-studio-backend
+  tag: staging-latest
+  pullPolicy: Always
+
+api:
+  replicaCount: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { cpu: 1000m, memory: 2Gi }
+
+worker:
+  replicaCount: 2
+  concurrency: 2
+
+ingress:
+  host: staging.hscredit.example.com
+  tls:
+    enabled: true
+    secretName: hscredit-staging-tls
+
+# 全局环境变量
+env:
+  ENVIRONMENT: staging
+  DEBUG: "false"
+  LOG_LEVEL: INFO
+  CORS_ALLOWED_ORIGINS: https://staging.hscredit.example.com

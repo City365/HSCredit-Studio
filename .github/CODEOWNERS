@@ -1,0 +1,33 @@
+# Code Owners - 自动指派 PR 评审人
+
+# 全局 owner
+* @team-lead @senior-engineer
+
+# 后端
+/backend/                          @backend-team
+/backend/hscredit_studio/api/    @backend-team @senior-engineer
+/backend/hscredit_studio/executor/ @backend-team @senior-engineer
+/backend/hscredit_studio/sandbox/ @security-team @backend-team
+
+# 前端
+/frontend/                         @frontend-team
+/frontend/src/api/                 @frontend-team @backend-team
+
+# DevOps / 部署
+/charts/                           @devops-team
+/deploy/                           @devops-team
+/observability/                    @devops-team
+/.github/workflows/                @devops-team
+/backend/Dockerfile                @devops-team @backend-team
+/frontend/Dockerfile               @devops-team @frontend-team
+
+# 数据库迁移（高敏感）
+/backend/alembic/versions/         @senior-engineer @team-lead
+/backend/hscredit_studio/models/ @senior-engineer @team-lead
+
+# 安全相关
+/backend/hscredit_studio/core/security.py  @security-team
+/backend/hscredit_studio/middleware/      @security-team
+
+# 设计文档
+/docs/                             @product-team

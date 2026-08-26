@@ -1,0 +1,91 @@
+# API 关键告警规则
+# @see docs/design/13-observability.md 第 13.7 节
+
+groups:
+  - name: hscredit_api
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRate
+        expr: |
+          sum(rate(hscredit_api_requests_total{status_code=~"5.."}[5m]))
+          /
+          sum(rate(hscredit_api_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API 错误率超过 5%"
+          description: "5 分钟内 5xx 占比 {{ $value | humanizePercentage }}"
+          runbook_url: "https://runbooks.hscredit.com/api-high-error-rate"
+
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(hscredit_api_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "API P99 延迟超过 1 秒"
+
+      - alert: APIDown
+        expr: up{job="hscredit-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 实例宕机"
+
+  - name: hscredit_studio
+    interval: 30s
+    rules:
+      - alert: RunQueueBacklog
+        expr: hscredit_celery_queue_length > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Celery 队列积压 {{ $value }} 个任务"
+
+      - alert: WorkerHighFailureRate
+        expr: |
+          sum(rate(hscredit_node_executions_total{status="failed"}[10m]))
+          /
+          sum(rate(hscredit_node_executions_total[10m])) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "节点失败率超过 10%"
+
+  - name: hscredit_database
+    interval: 30s
+    rules:
+      - alert: DatabaseConnectionsHigh
+        expr: |
+          hscredit_db_pool_connections{state="used"}
+          /
+          (hscredit_db_pool_connections{state="used"} + hscredit_db_pool_connections{state="idle"}) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+        annotations:
+          summary: "数据库连接使用率超过 80%"
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/data"}
+          /
+          node_filesystem_size_bytes{mountpoint="/data"}) < 0.15
+        for: 10m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "磁盘可用空间不足 15%"

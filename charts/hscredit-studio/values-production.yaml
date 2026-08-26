@@ -1,0 +1,43 @@
+# Production 环境配置
+
+image:
+  repository: ghcr.io/city365/hscredit-studio-backend
+  pullPolicy: Always
+
+api:
+  replicaCount: 4
+  minReplicas: 3
+  maxReplicas: 20
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: 2000m, memory: 4Gi }
+  pdb:
+    minAvailable: 2
+
+worker:
+  replicaCount: 4
+  minReplicas: 3
+  maxReplicas: 16
+  concurrency: 8
+
+workerHeavy:
+  enabled: true
+  replicaCount: 2
+  concurrency: 4
+
+scheduler:
+  enabled: true
+  replicaCount: 1
+
+ingress:
+  host: app.hscredit.example.com
+  tls:
+    enabled: true
+    secretName: hscredit-prod-tls
+
+env:
+  ENVIRONMENT: production
+  DEBUG: "false"
+  LOG_LEVEL: WARNING
+  CORS_ALLOWED_ORIGINS: https://app.hscredit.example.com
+  RATE_LIMIT_PER_TENANT: "1000"

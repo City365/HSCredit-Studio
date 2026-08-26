@@ -1,0 +1,82 @@
+# 默认值（被 values-staging / values-production 覆盖）
+
+image:
+  repository: hscredit-studio-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# API Gateway
+api:
+  replicaCount: 2
+  minReplicas: 2
+  maxReplicas: 10
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: 2000m, memory: 4Gi }
+  pdb:
+    minAvailable: 1
+
+# Celery Worker 通用
+worker:
+  replicaCount: 2
+  minReplicas: 2
+  maxReplicas: 8
+  concurrency: 4
+  resources:
+    requests: { cpu: 1000m, memory: 2Gi }
+    limits: { cpu: 4000m, memory: 8Gi }
+  pdb:
+    minAvailable: 1
+
+# Celery Worker 重型（模型训练）
+workerHeavy:
+  enabled: false  # Phase 2 启用
+  replicaCount: 1
+  concurrency: 2
+  resources:
+    requests: { cpu: 2000m, memory: 4Gi }
+    limits: { cpu: 8000m, memory: 16Gi }
+
+# Scheduler（监控任务）
+scheduler:
+  enabled: false  # Phase 2 启用
+  replicaCount: 1
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+# 数据库迁移
+migrationJob:
+  enabled: true
+  backoffLimit: 3
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  host: app.hscredit.local
+  tls:
+    enabled: false
+
+# 资源依赖（默认外部依赖，不随 Chart 部署）
+dependencies:
+  postgresql:
+    enabled: false  # 使用外部 PG
+  redis:
+    enabled: false  # 使用外部 Redis
+  minio:
+    enabled: false  # 使用外部 MinIO
+
+# 镜像拉取密钥（如需私有仓库）
+imagePullSecrets: []
+
+# ServiceAccount
+serviceAccount:
+  create: true
+  annotations: {}
+
+# Pod 级注解（Prometheus 抓取）
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"

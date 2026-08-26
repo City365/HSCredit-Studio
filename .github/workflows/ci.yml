@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install ruff black
+      - run: ruff check hscredit_studio/ tests/
+      - run: black --check hscredit_studio/ tests/
+
+  backend-type:
+    name: Backend Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -e ".[dev]"
+      - run: mypy hscredit_studio/ --ignore-missing-imports
+
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env: { POSTGRES_DB: hscredit_test, POSTGRES_USER: test, POSTGRES_PASSWORD: test }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 10s
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -e ".[dev,test]"
+      - run: pytest tests/unit/ -m unit --cov=hscredit_studio --cov-report=xml --cov-fail-under=80
+      - uses: codecov/codecov-action@v3
+        with: { file: backend/coverage.xml, flags: backend }
+
+  backend-integration:
+    name: Backend Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env: { POSTGRES_DB: hscredit_test, POSTGRES_USER: test, POSTGRES_PASSWORD: test }
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+      minio:
+        image: minio/minio:latest
+        env: { MINIO_ROOT_USER: test, MINIO_ROOT_PASSWORD: testtest }
+        ports: ["9000:9000"]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -e ".[dev,test]"
+      - run: alembic upgrade head
+        env: { DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/hscredit_test }
+      - run: pytest tests/integration/ -m integration -v
+
+  frontend-lint:
+    name: Frontend Lint & Type
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run test -- --coverage
+      - uses: codecov/codecov-action@v3
+        with: { file: frontend/coverage/coverage-final.json, flags: frontend }
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install bandit safety pip-audit
+      - run: bandit -r backend/hscredit_studio/ -f json -o bandit-report.json
+      - run: pip-audit --strict
+      - uses: aquasecurity/trivy-action@master
+        with: { scan-type: fs, scan-ref: ., severity: HIGH,CRITICAL, exit-code: "1" }
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint charts/hscredit-studio
+
+  pr-check:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if [ -z "${{ github.event.pull_request.body }}" ] || [ ${#{{ github.event.pull_request.body }}} -lt 50 ]; then
+            echo "::error::PR description must be at least 50 characters"
+            exit 1
+          fi

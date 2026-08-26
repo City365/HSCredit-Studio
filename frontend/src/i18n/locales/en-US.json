@@ -1,0 +1,69 @@
+{
+  "common": {
+    "appName": "HSCredit Studio",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "reset": "Reset",
+    "search": "Search",
+    "loading": "Loading...",
+    "actions": "Actions"
+  },
+  "status": {
+    "pending": "Pending",
+    "queued": "Queued",
+    "running": "Running",
+    "success": "Success",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "cached": "From Cache"
+  },
+  "menu": {
+    "workflows": "Workflows",
+    "runs": "Runs",
+    "templates": "Templates",
+    "monitor": "Monitor",
+    "models": "Models",
+    "admin": "Admin",
+    "profile": "Profile"
+  },
+  "header": {
+    "tenant": "Tenant"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "tenant": "Tenant",
+    "switchTenant": "Switch Tenant",
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed"
+  },
+  "workflow": {
+    "name": "Name",
+    "description": "Description",
+    "tags": "Tags",
+    "currentVersion": "Version",
+    "lastRunStatus": "Last Run",
+    "updatedAt": "Updated",
+    "open": "Open",
+    "create": "Create",
+    "search": "Search workflows",
+    "confirmDelete": "Confirm delete?"
+  },
+  "runs": {
+    "title": "Runs"
+  },
+  "error": {
+    "E_VALIDATION_INPUT": "Validation failed",
+    "E_NOT_FOUND": "Resource not found",
+    "E_TENANT_FORBIDDEN": "Forbidden tenant access",
+    "E_AUTH_REQUIRED": "Authentication required",
+    "E_RATE_LIMITED": "Too many requests, please retry later",
+    "E_INTERNAL": "Internal server error"
+  }
+}

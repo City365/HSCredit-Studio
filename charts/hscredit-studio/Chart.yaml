@@ -1,0 +1,15 @@
+apiVersion: v2
+name: hscredit-studio
+description: HSCredit 建模工作台 - 基于 hscredit 的多租户 SaaS 评分卡建模系统
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - credit
+  - risk
+  - scorecard
+  - workflow
+  - multi-tenant
+maintainers:
+  - name: HSCredit Team
+    email: dev@hscredit.example.com
