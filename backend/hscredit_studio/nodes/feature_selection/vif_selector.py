@@ -94,6 +94,14 @@ class VIFSelectorNode(BaseNode):
         # VIF 筛选无需 target 列, 默认传 'target' 以满足基类要求。
         target = params.get("target", "target")
 
+        # 仅保留数值列：字符串/类别列（如 *_bin 离散整数标签）会让 VIF 内部 np.isnan 抛错
+        numeric_df = df.select_dtypes(include=["number"])
+        if numeric_df.shape[1] == 0:
+            raise ValidationError(
+                "VIF 输入无任何数值列",
+                details={"node_type": self.contract.node_type, "all_columns": list(df.columns)},
+            )
+
         exclude = params.get("exclude") or []
         selector = VIFSelector(
             target=target,
@@ -102,11 +110,15 @@ class VIFSelectorNode(BaseNode):
             max_iter=int(params.get("max_iter", 100)),
         )
         try:
-            selector.fit(df)
-            selected_df = selector.transform(df)
+            selector.fit(numeric_df)
+            selected_df = selector.transform(numeric_df)
         except Exception as e:
             raise ValidationError(
                 f"VIF 筛选失败: {e}",
                 details={"node_type": self.contract.node_type},
             ) from e
+        # 把非数值列（如 target, 字符串类别）补回，保持下游期望结构
+        keep_non_numeric = [c for c in df.columns if c not in numeric_df.columns]
+        if keep_non_numeric:
+            selected_df = selected_df.assign(**{c: df[c].iloc[: len(selected_df)] for c in keep_non_numeric})
         return {"selector": selector, "selected_df": selected_df}

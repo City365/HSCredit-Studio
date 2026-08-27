@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     cors_allowed_origins: list[str] = ["http://localhost:3000"]
     rate_limit_per_tenant: int = 100
     rate_limit_window_seconds: int = 60
+    public_api_base_url: str = "http://localhost:8001"
 
     # ===== 数据库 =====
     database_url: str = "postgresql+asyncpg://hscredit:hscredit@localhost:5432/hscredit"
@@ -41,7 +42,9 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/1"
     celery_result_backend: str = "redis://localhost:6379/2"
 
-    # ===== 对象存储（S3 / MinIO）=====
+    # ===== 对象存储（S3 / MinIO / 本地后备）=====
+    storage_provider: str = "s3"  # "s3" | "local"
+    local_storage_dir: str = "./_storage"
     s3_endpoint: str = "http://localhost:9001"
     s3_access_key: str = "minio"
     s3_secret_key: str = "minio123"

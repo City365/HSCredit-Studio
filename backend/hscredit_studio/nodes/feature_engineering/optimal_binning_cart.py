@@ -118,4 +118,5 @@ class OptimalBinningCartNode(BaseNode):
 
         binned_df = df.copy()
         binned_df[f"{feature}_bin"] = pd.Series(binned_series, index=df.index)
-        return {"binner": binner, "binned_df": binned_df}
+        # 与 optimal_binning_chi 保持一致：df 字段也带分箱列，确保汇聚场景正确
+        return {"binner": binner, "binned_df": binned_df, "df": binned_df}

@@ -36,62 +36,75 @@ from hscredit_studio.nodes import NodeRegistry  # noqa: E402
 from hscredit_studio.services.template import ensure_system_templates  # noqa: E402
 
 
-DEMO_TENANT_SLUG = "demo"
-DEMO_USERS = [
-    {"email": "admin@demo.com", "display_name": "Demo Admin", "password": "DemoPass123!", "role": "owner"},
-    {"email": "analyst@demo.com", "display_name": "Demo Analyst", "password": "DemoPass123!", "role": "analyst"},
+DEMO_TENANTS = [
+    {
+        "name": "Demo 租户",
+        "slug": "demo",
+        "plan": "pro",
+        "users": [
+            {"email": "admin@demo.com", "display_name": "Demo Admin", "password": "DemoPass123!", "role": "owner"},
+            {"email": "analyst@demo.com", "display_name": "Demo Analyst", "password": "DemoPass123!", "role": "analyst"},
+        ],
+    },
+    {
+        "name": "Acme 租户",
+        "slug": "acme",
+        "plan": "enterprise",
+        "users": [
+            {"email": "admin@acme.com", "display_name": "Acme Admin", "password": "AcmePass123!", "role": "owner"},
+        ],
+    },
 ]
 
 
 async def seed_users():
-    """创建 demo 租户 + 2 用户."""
+    """创建 demo & acme 租户与用户."""
     async with session_scope() as session:
-        # 租户
-        tenant = await session.scalar(select(Tenant).where(Tenant.slug == DEMO_TENANT_SLUG))
-        if tenant is None:
-            tenant = Tenant(
-                tenant_id=uuid4(),
-                name="Demo 租户",
-                slug=DEMO_TENANT_SLUG,
-                plan="pro",
-                status="active",
-                settings={},
-            )
-            session.add(tenant)
-            await session.flush()
-            print(f"✓ 创建租户: {tenant.name} (id={tenant.tenant_id})")
-        else:
-            print(f"· 租户已存在: {tenant.slug}")
+        for t_info in DEMO_TENANTS:
+            tenant = await session.scalar(select(Tenant).where(Tenant.slug == t_info["slug"]))
+            if tenant is None:
+                tenant = Tenant(
+                    tenant_id=uuid4(),
+                    name=t_info["name"],
+                    slug=t_info["slug"],
+                    plan=t_info["plan"],
+                    status="active",
+                    settings={},
+                )
+                session.add(tenant)
+                await session.flush()
+                print(f"✓ 创建租户: {tenant.name} (id={tenant.tenant_id})")
+            else:
+                print(f"· 租户已存在: {tenant.slug}")
 
-        await set_tenant_context(session, tenant.tenant_id)
+            await set_tenant_context(session, tenant.tenant_id)
 
-        # 用户
-        for u in DEMO_USERS:
-            existing = await session.scalar(select(User).where(User.email == u["email"]))
-            if existing:
-                print(f"· 用户已存在: {u['email']}")
-                continue
-            user = User(
-                user_id=uuid4(),
-                email=u["email"],
-                display_name=u["display_name"],
-                password_hash=hash_password(u["password"]),
-                status="active",
-                locale="zh-CN",
-                email_verified_at=datetime.utcnow(),  # naive UTC — 匹配 DB TIMESTAMP 列
-            )
-            session.add(user)
-            await session.flush()
+            for u in t_info["users"]:
+                existing = await session.scalar(select(User).where(User.email == u["email"]))
+                if existing:
+                    print(f"· 用户已存在: {u['email']}")
+                    continue
+                user = User(
+                    user_id=uuid4(),
+                    email=u["email"],
+                    display_name=u["display_name"],
+                    password_hash=hash_password(u["password"]),
+                    status="active",
+                    locale="zh-CN",
+                    email_verified_at=datetime.utcnow(),
+                )
+                session.add(user)
+                await session.flush()
 
-            member = TenantMember(
-                tenant_id=tenant.tenant_id,
-                user_id=user.user_id,
-                role=u["role"],
-                status="active",
-                invited_by=None,
-            )
-            session.add(member)
-            print(f"✓ 创建用户: {u['email']} (role={u['role']})")
+                member = TenantMember(
+                    tenant_id=tenant.tenant_id,
+                    user_id=user.user_id,
+                    role=u["role"],
+                    status="active",
+                    invited_by=None,
+                )
+                session.add(member)
+                print(f"✓ 创建用户: {u['email']} (role={u['role']})")
 
 
 async def seed_node_definitions():
@@ -145,9 +158,10 @@ async def main():
     await seed_templates()
     print("\n🎉 种子数据植入完成！")
     print(f"\n登录信息:")
-    print(f"  Tenant slug: {DEMO_TENANT_SLUG}")
-    print(f"  Admin: admin@demo.com / DemoPass123!")
-    print(f"  Analyst: analyst@demo.com / DemoPass123!")
+    for t_info in DEMO_TENANTS:
+        print(f"  [租户: {t_info['slug']}]")
+        for u in t_info['users']:
+            print(f"    {u['role']}: {u['email']} / {u['password']}")
 
 
 if __name__ == "__main__":

@@ -51,6 +51,13 @@ class ScoreCardNode(BaseNode):
                 required=False,
                 description="（可选）已训练的 WOE 编码器, 用于复用编码规则",
             ),
+            PortSchema(
+                name="model",
+                type="ModelArtifact",
+                required=False,
+                aliases=["logistic_model", "lr_model"],
+                description="（可选）上游逻辑回归模型, 透传给 model_report 用于实际打分",
+            ),
         ],
         outputs=[
             PortSchema(
@@ -62,6 +69,16 @@ class ScoreCardNode(BaseNode):
                 name="score_points",
                 type="DataFrame",
                 description="评分卡分箱分数表（含基础分）",
+            ),
+            PortSchema(
+                name="model",
+                type="ModelArtifact",
+                description="上游透传的实际打分模型（logistic_regression），供 model_report 调用",
+            ),
+            PortSchema(
+                name="df",
+                type="DataFrame",
+                description="原始训练 DataFrame（透传给下游 model_report）",
             ),
         ],
         params=[
@@ -206,4 +223,4 @@ class ScoreCardNode(BaseNode):
             score_card_obj = None
             points_df = None
 
-        return {"score_card": score_card_obj, "score_points": None}
+        return {"score_card": score_card_obj, "score_points": None, "model": inputs.get("model"), "df": df}

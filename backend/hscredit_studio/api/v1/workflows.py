@@ -23,6 +23,8 @@ from hscredit_studio.schemas.workflow import (
     WorkflowVersionCreate,
     WorkflowVersionResponse,
 )
+from hscredit_studio.schemas.run import RunResponse, RunSubmitRequest
+from hscredit_studio.services import run as run_service
 from hscredit_studio.services import workflow as wf_service
 
 router = APIRouter(tags=["工作流"])
@@ -189,6 +191,29 @@ async def get_version(
 ) -> WorkflowVersionResponse:
     return await wf_service.get_version(
         session, UUID(tenant_id), workflow_id, version_number
+    )
+
+
+# ===== Run 提交 =====
+
+
+@router.post(
+    "/{workflow_id}/runs",
+    response_model=RunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="提交 Run",
+    description="异步提交工作流执行：创建 Run + 所有 NodeExecution 占位记录，并入队 Celery 执行",
+)
+async def submit_run(
+    workflow_id: UUID,
+    req: RunSubmitRequest,
+    session: SessionDep,
+    tenant_id: TenantDep,
+    user: CurrentUserDep,
+) -> RunResponse:
+    user_id = UUID(user["sub"])
+    return await run_service.submit_run(
+        session, UUID(tenant_id), user_id, workflow_id, req
     )
 
 

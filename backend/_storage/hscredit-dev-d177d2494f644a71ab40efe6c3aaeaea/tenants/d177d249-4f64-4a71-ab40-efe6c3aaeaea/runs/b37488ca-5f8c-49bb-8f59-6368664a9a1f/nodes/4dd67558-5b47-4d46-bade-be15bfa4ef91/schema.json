@@ -1,0 +1,1 @@
+{"target": "numeric", "income": "numeric", "customer_age": "numeric", "payment_type": "categorical", "employment_status": "categorical", "housing_status": "categorical", "bank_months_count": "numeric"}

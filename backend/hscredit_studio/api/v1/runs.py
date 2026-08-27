@@ -36,33 +36,6 @@ from hscredit_studio.schemas.run import ArtifactListResponse
 router = APIRouter(tags=["运行"])
 
 
-# ===== Run 提交 =====
-
-
-@router.post(
-    "/workflows/{workflow_id}/runs",
-    response_model=RunResponse,
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="提交 Run",
-    description=(
-        "异步提交工作流执行：创建 Run + 所有 NodeExecution 占位记录。"
-        "返回 202 Accepted + 完整 Run 详情。实际执行由 Phase 1.5 调度器接管。"
-    ),
-)
-async def submit_run(
-    workflow_id: UUID,
-    req: RunSubmitRequest,
-    session: SessionDep,
-    tenant_id: TenantDep,
-    user: CurrentUserDep,
-) -> RunResponse:
-    # JWT payload 中 user_id 存放在 ``sub`` claim
-    user_id = UUID(user["sub"])
-    return await run_service.submit_run(
-        session, UUID(tenant_id), user_id, workflow_id, req
-    )
-
-
 # ===== Run 列表 / 详情 =====
 
 

@@ -11,6 +11,7 @@ from prometheus_client import make_asgi_app
 
 from hscredit_studio.core.config import settings
 from hscredit_studio.core.logging import setup_logging
+from hscredit_studio.api.exception_handlers import register_exception_handlers
 from hscredit_studio.api.v1 import health
 from hscredit_studio.api.v1 import auth, nodes, workflows, runs, templates, ws
 from hscredit_studio.middleware.tenant import TenantMiddleware
@@ -45,6 +46,9 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
 )
 
+# 注册全局异常处理
+register_exception_handlers(app)
+
 # 中间件（顺序：最后添加的最先执行）
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -68,10 +72,39 @@ app.mount("/metrics", metrics_app)
 app.include_router(health.router, prefix="/api/v1", tags=["健康检查"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
 app.include_router(workflows.router, prefix="/api/v1/{tenant_slug}/workflows", tags=["工作流"])
-app.include_router(nodes.router, prefix="/api/v1/{tenant_slug}/node-definitions", tags=["节点定义"])
 app.include_router(runs.router, prefix="/api/v1/{tenant_slug}/runs", tags=["运行"])
+app.include_router(nodes.router, prefix="/api/v1/{tenant_slug}/node-definitions", tags=["节点定义"])
 app.include_router(templates.router, prefix="/api/v1/{tenant_slug}/templates", tags=["模板"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
+
+
+# ===== 本地后备存储：直接下载端点（开发模式）=====
+from pathlib import Path  # noqa: E402
+
+from fastapi.responses import FileResponse  # noqa: E402
+
+from hscredit_studio.services.storage import (  # noqa: E402
+    _is_local_provider,
+    _local_path,
+)
+
+
+@app.get("/api/v1/_storage/download", tags=["存储"], include_in_schema=False)
+async def storage_download(bucket: str, key: str) -> FileResponse:
+    """开发模式（STORAGE_PROVIDER=local）：直接通过后端路由下载对象.
+
+    生产环境禁用——应通过 S3 预签名 URL 直连对象存储。
+    """
+    if not _is_local_provider():
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="本地后备存储未启用")
+    path = _local_path(bucket, key)
+    if not path.exists():
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="对象不存在")
+    return FileResponse(path=str(path), filename=Path(key).name)
 
 
 @app.get("/")

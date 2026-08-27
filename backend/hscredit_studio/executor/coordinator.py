@@ -194,11 +194,13 @@ class RunCoordinator:
                     if down_ne is None or down_ne.status != "queued":
                         continue
                     # 合并所有上游节点的 artifact_paths → 下游节点的 inputs
+                    # 关键：使用 {upstream_node_id}.{output_name} 作为 key 避免同名覆盖
                     upstream_artifacts: dict[str, str] = {}
                     for upstream_id in down_plan.upstream_node_ids:
                         up_ne = await _get_ne_by_node_id(session, ne.run_id, upstream_id)
                         if up_ne and up_ne.artifact_paths:
-                            upstream_artifacts.update(up_ne.artifact_paths)
+                            for output_name, storage_key in up_ne.artifact_paths.items():
+                                upstream_artifacts[f"{upstream_id}.{output_name}"] = storage_key
                     if upstream_artifacts:
                         down_ne.artifact_paths = upstream_artifacts
                     await session.commit()

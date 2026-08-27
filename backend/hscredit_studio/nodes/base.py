@@ -108,7 +108,32 @@ class BaseNode(ABC):
             # 候选项
             if spec.choices and value is not None:
                 allowed_values = [c.value for c in spec.choices]
-                if value not in allowed_values:
+                # multiselect: value 是 list，校验每个元素是否在 choices 中
+                if spec.type == "multiselect":
+                    if not isinstance(value, (list, tuple)):
+                        raise ValidationError(
+                            f"节点 {self.contract.node_type} 参数 {spec.name} 值 {value!r} 应为列表",
+                            details={
+                                "node_type": self.contract.node_type,
+                                "param_name": spec.name,
+                                "value": value,
+                                "allowed_values": allowed_values,
+                            },
+                        )
+                    invalid = [v for v in value if v not in allowed_values]
+                    if invalid:
+                        raise ValidationError(
+                            f"节点 {self.contract.node_type} 参数 {spec.name} 值 {value!r} "
+                            f"不在允许范围内 {allowed_values}",
+                            details={
+                                "node_type": self.contract.node_type,
+                                "param_name": spec.name,
+                                "value": value,
+                                "allowed_values": allowed_values,
+                                "invalid": invalid,
+                            },
+                        )
+                elif value not in allowed_values:
                     raise ValidationError(
                         f"节点 {self.contract.node_type} 参数 {spec.name} 值 {value!r} "
                         f"不在允许范围内 {allowed_values}",

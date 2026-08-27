@@ -1,0 +1,1 @@
+{"target": "int64", "income": "float64", "customer_age": "int64", "payment_type": "str", "employment_status": "str", "housing_status": "str", "bank_months_count": "int64"}

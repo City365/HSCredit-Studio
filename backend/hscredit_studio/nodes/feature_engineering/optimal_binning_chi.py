@@ -132,5 +132,9 @@ class OptimalBinningChiNode(BaseNode):
         binned_df[f"{feature}_bin"] = pd.Series(binned_series, index=df.index)
         # ``df`` 输出原始数据（保留下游可访问的 raw DataFrame），
         # ``binned_df`` 输出含分箱列的 DataFrame（woe_encoder 优先使用）。
+        # 多 bin_* 节点汇聚时（如模板中 age / income / history 三个 bin 节点输出同
+        # 名 df），executor 只能保留一个 df，因此让 df 也带本节点分箱列，
+        # 保证 woe_encoder 取任意一个 df 都能找到 *_bin 列。
+        df_with_bin = binned_df
         # 两条产物内容不同 → sha256 不同 → 不会触发 uq_node_artifact_dedup。
-        return {"binner": binner, "binned_df": binned_df, "df": df}
+        return {"binner": binner, "binned_df": binned_df, "df": df_with_bin}

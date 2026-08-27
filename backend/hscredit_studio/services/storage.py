@@ -14,6 +14,8 @@
 """
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any, BinaryIO
 from uuid import UUID
 
@@ -27,6 +29,18 @@ _log = get_logger(__name__)
 _session: aiobotocore.session.AioSession | None = None
 
 
+def _is_local_provider() -> bool:
+    """判断是否启用本地后备存储."""
+    return (settings.storage_provider or "s3").lower() == "local"
+
+
+def _local_path(bucket: str, key: str) -> Path:
+    """解析对象在本地后备存储中的真实路径."""
+    base = Path(settings.local_storage_dir or "./_storage").resolve()
+    safe_key = key.replace("..", "_")
+    return (base / bucket / safe_key).resolve()
+
+
 async def get_storage_client() -> aiobotocore.session.AioSession:
     """获取 aiobotocore :class:`AioSession` 单例.
 
@@ -36,7 +50,7 @@ async def get_storage_client() -> aiobotocore.session.AioSession:
     global _session
     if _session is None:
         _session = aiobotocore.session.AioSession()
-        _log.info("storage_session_created", endpoint=settings.s3_endpoint)
+        _log.info("storage_session_created", endpoint=settings.s3_endpoint, provider=settings.storage_provider)
     return _session
 
 
@@ -92,6 +106,11 @@ async def upload_bytes(
     """
     session = await get_storage_client()
     bucket = get_tenant_bucket(tenant_id)
+    if _is_local_provider():
+        path = _local_path(bucket, key)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        return f"local://{bucket}/{key}"
     async with session.create_client("s3", **_build_s3_client_kwargs()) as client:
         await client.put_object(
             Bucket=bucket,
@@ -142,6 +161,11 @@ async def download_bytes(tenant_id: UUID, key: str) -> bytes:
     """
     session = await get_storage_client()
     bucket = get_tenant_bucket(tenant_id)
+    if _is_local_provider():
+        path = _local_path(bucket, key)
+        if not path.exists():
+            return b""
+        return path.read_bytes()
     async with session.create_client("s3", **_build_s3_client_kwargs()) as client:
         response = await client.get_object(Bucket=bucket, Key=key)
         async with response["Body"] as stream:
@@ -153,6 +177,8 @@ async def object_exists(tenant_id: UUID, key: str) -> bool:
 
     通过 ``head_object`` 实现(比 ``get_object`` 更轻量,不下载 body)。
     """
+    if _is_local_provider():
+        return _local_path(bucket, key).exists()
     from botocore.exceptions import ClientError  # aiobotocore 依赖 botocore
 
     session = await get_storage_client()
@@ -184,6 +210,14 @@ async def presigned_download_url(
     """
     session = await get_storage_client()
     bucket = get_tenant_bucket(tenant_id)
+    if _is_local_provider():
+        # 本地后备：返回 FastAPI 路由代理 URL（开发用，不做预签名）。
+        from hscredit_studio.core.config import settings as _s
+
+        base = _s.public_api_base_url or "http://localhost:8001"
+        from urllib.parse import quote
+
+        return f"{base}/api/v1/_storage/download?bucket={quote(bucket)}&key={quote(key)}&expires_in={expires_in}"
     async with session.create_client("s3", **_build_s3_client_kwargs()) as client:
         url = await client.generate_presigned_url(
             "get_object",

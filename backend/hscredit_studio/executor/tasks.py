@@ -307,6 +307,9 @@ async def _load_inputs(
     该函数会从 S3 下载字节流并按 artifact_type 推断反序列化（DataFrame → parquet、
     Model → pickle、dict → JSON 等）。
 
+    artifact_paths key 格式 ``{upstream_node_id}.{output_name}``（避免同名覆盖），
+    此处拆出真正的 ``output_name`` 并把同名 value 合并为 list。
+
     返回的字典 ``inputs`` 直接传给 ``node_instance.run(inputs, params)``。
     """
     if ne.tenant_id is None:
@@ -319,6 +322,7 @@ async def _load_inputs(
         session=session,
         tenant_id=ne.tenant_id,
         artifact_paths=upstream_paths,
+        _input_ne=ne,
     )
 
 

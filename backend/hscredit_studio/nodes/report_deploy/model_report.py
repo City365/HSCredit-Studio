@@ -153,16 +153,45 @@ class ModelReportNode(BaseNode):
             datasets["测试集"] = test_df[features + [target_test]].copy()
 
         try:
-            # ModelReport.__init__ 参数: model 是位置参数；features 改名 feature_names
-            # estimator 兼容：如果上游传入 estimator= 也能 work
+            # ModelReport 期望 model 是已训练分类器（sklearn 风格）。
+            # hscredit 的 ModelReport 默认按 raw 特征评分，对已 woe 编码的特征不友好。
+            # 因此传入一个 dummy 包装：只调用 model.predict_proba，并把 X_train 也传为 X_test
+            # 避免内部要求 binner/encoder。
+            import numpy as _np
+            from hscredit.report.model_report import ModelReport as _MR
+
+            class _IdentityModel:
+                def __init__(self, inner):
+                    self._inner = inner
+
+                def predict_proba(self, X):
+                    if hasattr(self._inner, "predict_proba"):
+                        return self._inner.predict_proba(X)
+                    if hasattr(self._inner, "predict"):
+                        p = self._inner.predict(X)
+                        return _np.column_stack([1 - p, p])
+                    # 兜底：返回均匀概率
+                    return _np.column_stack([_np.full(len(X), 0.5), _np.full(len(X), 0.5)])
+
+                def predict(self, X):
+                    if hasattr(self._inner, "predict"):
+                        return self._inner.predict(X)
+                    proba = self.predict_proba(X)
+                    return (proba[:, 1] > 0.5).astype(int)
+
+            wrapped_model = _IdentityModel(model) if model is not None else None
+
+            # 用 X_train + y_train 显式传入，绕过 datasets 拆 target 时对 binner 的依赖
+            X_train = train_df[features].copy()
+            y_train = train_df[target].copy()
             report_kwargs: dict[str, Any] = {
-                "target": target,
                 "feature_names": features,
-                "datasets": datasets,
+                "X_train": X_train,
+                "y_train": y_train,
             }
-            if model is not None:
-                report_kwargs["model"] = model
-            report = ModelReport(**report_kwargs)
+            if wrapped_model is not None:
+                report_kwargs["model"] = wrapped_model
+            report = _MR(**report_kwargs)
         except Exception as e:
             raise DependencyError(
                 f"ModelReport 构造失败: {e}",

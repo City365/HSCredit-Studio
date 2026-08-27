@@ -78,6 +78,19 @@ class WOEEncoderNode(BaseNode):
         df = inputs.get("binned_df")
         if df is None:
             df = inputs.get("df")
+        # 多 bin_* 节点汇聚时，df 已被 executor 合并为 list — 合并所有 df 的 *_bin 列
+        # (3 个 bin_* 节点各自产一份 df，每份只含本节点分箱列；保留所有 *_bin 列供 WOE)
+        if isinstance(df, list):
+            if not df:
+                df = None
+            else:
+                merged = df[0]
+                for extra in df[1:]:
+                    for col in extra.columns:
+                        if col not in merged.columns:
+                            merged = merged.copy()
+                            merged[col] = extra[col]
+                df = merged
         if df is None:
             raise ValidationError(
                 "缺少必需输入端口 df 或 binned_df",

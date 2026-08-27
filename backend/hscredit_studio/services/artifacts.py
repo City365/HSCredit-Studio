@@ -191,7 +191,10 @@ async def save_node_output(
     )
 
     # 落 NodeArtifact 元数据（幂等：同 node_exec_id + artifact_type + sha256 唯一）
-    artifact = NodeArtifact(
+    # 用 Postgres ``ON CONFLICT DO NOTHING`` 处理节点重试时产物完全相同的情况
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    insert_stmt = pg_insert(NodeArtifact).values(
         node_exec_id=ne.node_exec_id,
         tenant_id=tenant_id,
         artifact_type=atype,
@@ -200,8 +203,10 @@ async def save_node_output(
         sha256=sha,
         metadata_=metadata or {},
     )
-    session.add(artifact)
-    await session.flush()
+    insert_stmt = insert_stmt.on_conflict_do_nothing(
+        index_elements=["node_exec_id", "artifact_type", "sha256"]
+    )
+    await session.execute(insert_stmt)
 
     _log.debug(
         "artifact_saved",
@@ -218,19 +223,26 @@ async def load_node_inputs(
     session: AsyncSession,
     tenant_id: UUID,
     artifact_paths: dict[str, str],
+    _input_ne: Any | None = None,
 ) -> dict[str, Any]:
     """从 artifact_paths 反序列化上游节点输出.
 
     Parameters
     ----------
     artifact_paths:
-        ``NodeExecution.artifact_paths`` —— ``{output_name: storage_key}``。
+        ``NodeExecution.artifact_paths`` —— ``{output_name: storage_key}`` 或
+        executor 写入的 ``{upstream_node_id}.{output_name}: storage_key`` 形式。
     """
     if not artifact_paths:
         return {}
 
     inputs: dict[str, Any] = {}
-    for output_name, storage_key in artifact_paths.items():
+    for qualified_key, storage_key in artifact_paths.items():
+        # 兼容 executor 写入的 "{upstream_node_id}.{output_name}" 命名空间形式
+        if "." in qualified_key and _input_ne is not None:
+            upstream_node_id, _, output_name = qualified_key.partition(".")
+        else:
+            output_name = qualified_key
         # 从 S3 key 解析 artifact_type：取 .pkl/.parquet/.json 后缀
         ext = storage_key.rsplit(".", 1)[-1]
         ext_to_type = {
@@ -245,7 +257,15 @@ async def load_node_inputs(
         atype = ext_to_type.get(ext, "bin")
 
         data = await storage.download_bytes(tenant_id, storage_key)
-        inputs[output_name] = deserialize_from_storage(atype, data)
+        value = deserialize_from_storage(atype, data)
+        # 同一 output_name 被多个上游节点覆盖（如 3 个 bin_* 节点都输出 df），
+        # 合并为 list 保留全部上游输出，避免后续节点拿到不完整输入。
+        if output_name in inputs:
+            if not isinstance(inputs[output_name], list):
+                inputs[output_name] = [inputs[output_name]]
+            inputs[output_name].append(value)
+        else:
+            inputs[output_name] = value
     return inputs
 
 
