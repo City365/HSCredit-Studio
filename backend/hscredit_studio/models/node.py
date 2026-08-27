@@ -15,6 +15,8 @@ from datetime import datetime
 
 from sqlalchemy import (
     Boolean,
+    DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -254,6 +256,85 @@ class CustomNodeTestRun(Base, TimestampMixin, TenantMixin, ModelSerializerMixin)
     __table_args__ = (Index("ix_custom_node_test_runs_version", "version_id"),)
 
 
+class NodeResourceUsage(Base, TimestampMixin, TenantMixin):
+    """节点沙箱执行资源消耗记录 (Phase 3 B17).
+
+    每次节点执行 (NodeExecution) 后, 由 :class:`SubprocessSandbox` 写入:
+    - ``cpu_seconds``: 用户态 CPU 时间 (跨平台可用 resource.getrusage / 子进程计时)
+    - ``mem_peak_mb``: 峰值常驻内存 (MB; subprocess 后端在 Windows 上不支持, 记 0)
+    - ``duration_ms``: 端到端耗时 (毫秒, 主进程计时)
+    - ``sandbox_backend``: ``subprocess / docker / kubernetes`` (供计费分档)
+    - ``status``: ``success / failed / timeout / oom``
+
+    供:
+    - Phase 4 计费模块 (用量聚合)
+    - Phase 5 监控大屏 (节点资源告警)
+    - 租户自助用量查询
+    """
+
+    __tablename__ = "node_resource_usage"
+
+    usage_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_uuid()"),
+    )
+    node_exec_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("node_executions.node_exec_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        comment="关联 NodeExecution (1:1)",
+    )
+    node_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        comment="节点类型 (e.g. csv_ingest)",
+    )
+    cpu_seconds: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        server_default=text("0"),
+        comment="CPU 时间 (秒)",
+    )
+    mem_peak_mb: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        server_default=text("0"),
+        comment="峰值 RSS (MB; 0 表示不支持)",
+    )
+    duration_ms: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        server_default=text("0"),
+        comment="端到端耗时 (毫秒)",
+    )
+    sandbox_backend: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        server_default=text("'subprocess'"),
+        comment="沙箱后端: subprocess / docker / kubernetes",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        server_default=text("'success'"),
+        comment="执行结果: success / failed / timeout / oom",
+    )
+    captured_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False),
+        nullable=False,
+        server_default=text("now()"),
+        comment="资源采集时刻",
+    )
+
+    __table_args__ = (
+        Index("ix_node_resource_usage_tenant", "tenant_id"),
+        Index("ix_node_resource_usage_node_type", "node_type"),
+        Index("ix_node_resource_usage_captured_at", "captured_at"),
+    )
+
+
 __all__ = [
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
     "VISIBILITY_VALUES",
@@ -261,4 +342,5 @@ __all__ = [
     "CustomNodeTestRun",
     "CustomNodeVersion",
     "NodeDefinition",
+    "NodeResourceUsage",
 ]

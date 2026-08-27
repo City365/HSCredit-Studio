@@ -37,6 +37,7 @@ from hscredit_studio.models.node import (
     CustomNodeTestRun,
     CustomNodeVersion,
     NodeDefinition,
+    NodeResourceUsage,
 )
 from hscredit_studio.models.run import (
     LOG_STREAM_VALUES,
@@ -105,6 +106,7 @@ __all__ = [
     "NodeDefinition",
     "NodeExecution",
     "NodeExecutionLog",
+    "NodeResourceUsage",
     # 执行
     "Run",
     "RunArtifact",

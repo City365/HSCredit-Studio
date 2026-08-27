@@ -29,6 +29,7 @@ from typing import Any
 from uuid import UUID
 
 from hscredit_studio.celery_app import celery_app
+from hscredit_studio.core.config import settings
 from hscredit_studio.core.database import session_scope, set_tenant_context
 from hscredit_studio.core.exceptions import HSCreditWorkflowError
 from hscredit_studio.core.logging import get_logger
@@ -200,7 +201,7 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 )
                 return {"status": "cached"}
 
-            # 3. 执行 (Phase 3 B14: 通过沙箱执行, 默认 subprocess 后端)
+            # 3. 执行 (Phase 3 B14: 通过沙箱执行, 默认 subprocess 后端; B17: 采集资源用量)
             from hscredit_studio.services.sandbox import (
                 SandboxError,
                 SandboxOOMError,
@@ -211,7 +212,20 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
             sandbox = get_sandbox_backend()
             node_instance.validate_inputs(inputs)
             node_instance.validate_params(params)
-            outputs = await sandbox.execute(ne.node_type, inputs, params)
+            outputs, resource_usage = await sandbox.execute_with_usage(
+                ne.node_type, inputs, params
+            )
+
+            # Phase 3 B17: 落库资源用量 (失败仅 WARN, 不阻塞主流程)
+            from hscredit_studio.services.resource_usage import record_resource_usage
+
+            await record_resource_usage(
+                node_exec_id=node_exec_id,
+                node_type=ne.node_type,
+                tenant_id=run.tenant_id,
+                usage=resource_usage,
+                sandbox_backend=settings.sandbox_backend,
+            )
 
             # 4. 产物落盘（统一在 executor 层序列化 + 上传 + 写 NodeArtifact）
             artifact_paths, output_hash = await _save_outputs(

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import abc
 import contextlib
+import dataclasses
 import os
 import pickle
 import subprocess
@@ -63,6 +64,23 @@ class SandboxOOMError(SandboxError):
     """沙箱内存超限 (subprocess 后端在 Windows 上无法直接检测, 仅在 Linux 上生效)."""
 
 
+@dataclasses.dataclass
+class SandboxResourceUsage:
+    """沙箱执行资源用量 (Phase 3 B17 埋点).
+
+    Attributes:
+        cpu_seconds: 用户态 CPU 时间 (秒, 跨平台从 resource.getrusage 读取).
+        mem_peak_mb: 峰值常驻内存 (MB; 0 表示不支持, 例如 Windows 限制).
+        duration_ms: 端到端耗时 (毫秒, 主进程计时).
+        status: ``success / failed / timeout / oom``.
+    """
+
+    cpu_seconds: float = 0.0
+    mem_peak_mb: float = 0.0
+    duration_ms: int = 0
+    status: str = "success"
+
+
 class SandboxBackend(abc.ABC):
     """沙箱后端抽象."""
 
@@ -70,13 +88,8 @@ class SandboxBackend(abc.ABC):
     async def execute(self, node_type: str, inputs: dict, params: dict) -> dict:
         """在沙箱内执行节点.
 
-        Args:
-            node_type: 节点类型标识 (e.g. ``csv_ingest``).
-            inputs: 节点输入字典 (含 DataFrame 等大对象, 由后端负责序列化).
-            params: 节点参数字典.
-
-        Returns:
-            节点输出字典.
+        简化 API (向后兼容): 返回节点 outputs dict (供 _save_outputs 直接用)。
+        资源用量通过 :class:`SandboxResourceUsage` 辅助函数或日志记录。
 
         Raises:
             SandboxTimeoutError: 节点执行超时.
@@ -85,11 +98,31 @@ class SandboxBackend(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    async def execute_with_usage(
+        self,
+        node_type: str,
+        inputs: dict,
+        params: dict,
+    ) -> tuple[dict, SandboxResourceUsage]:
+        """在沙箱内执行节点 + 返回资源用量 (Phase 3 B17).
+
+        Returns:
+            (outputs, usage) 元组。
+        """
+        raise NotImplementedError
+
 
 class InProcessSandbox(SandboxBackend):
     """进程内执行 (SANDBOX_ENABLED=False 时使用, 用于单测与早期 dev)."""
 
     async def execute(self, node_type: str, inputs: dict, params: dict) -> dict:
+        outputs, _ = await self.execute_with_usage(node_type, inputs, params)
+        return outputs
+
+    async def execute_with_usage(
+        self, node_type: str, inputs: dict, params: dict
+    ) -> tuple[dict, SandboxResourceUsage]:
         from hscredit_studio.nodes.registry import NodeRegistry
 
         node_cls = NodeRegistry.try_get(node_type)
@@ -98,7 +131,18 @@ class InProcessSandbox(SandboxBackend):
         node_instance = node_cls()
         node_instance.validate_inputs(inputs)
         node_instance.validate_params(params)
-        return node_instance.run(inputs, params)
+
+        start = time.monotonic()
+        try:
+            outputs = node_instance.run(inputs, params)
+        finally:
+            duration_ms = int((time.monotonic() - start) * 1000)
+        return outputs, SandboxResourceUsage(
+            cpu_seconds=duration_ms / 1000.0,  # 简化: 用 wall clock 当 CPU 时间
+            mem_peak_mb=0.0,
+            duration_ms=duration_ms,
+            status="success",
+        )
 
 
 class SubprocessSandbox(SandboxBackend):
@@ -123,6 +167,12 @@ class SubprocessSandbox(SandboxBackend):
         raise SandboxError("无法定位 backend 项目根目录")
 
     async def execute(self, node_type: str, inputs: dict, params: dict) -> dict:
+        outputs, _ = await self.execute_with_usage(node_type, inputs, params)
+        return outputs
+
+    async def execute_with_usage(
+        self, node_type: str, inputs: dict, params: dict
+    ) -> tuple[dict, SandboxResourceUsage]:
         worker_path = self._project_root / self.WORKER_RELATIVE_PATH
         if not worker_path.exists():
             raise SandboxError(f"沙箱 worker 脚本不存在: {worker_path}")
@@ -132,8 +182,8 @@ class SubprocessSandbox(SandboxBackend):
             pickle.dump({"node_type": node_type, "inputs": inputs, "params": params}, payload_file)
             payload_path = payload_file.name
 
+        start = time.monotonic()
         try:
-            start = time.monotonic()
             try:
                 proc = subprocess.run(
                     [sys.executable, str(worker_path), payload_path],
@@ -143,18 +193,28 @@ class SubprocessSandbox(SandboxBackend):
                     cwd=str(self._project_root),
                 )
             except subprocess.TimeoutExpired as e:
-                duration = time.monotonic() - start
+                duration_ms = int((time.monotonic() - start) * 1000)
                 _log.warning(
                     "sandbox_timeout",
                     node_type=node_type,
                     timeout_sec=self.timeout_sec,
-                    duration_sec=round(duration, 2),
+                    duration_sec=round(duration_ms / 1000, 2),
+                )
+                # 构造超时 usage, 抛异常
+                usage = SandboxResourceUsage(
+                    cpu_seconds=0.0,
+                    mem_peak_mb=0.0,
+                    duration_ms=duration_ms,
+                    status="timeout",
                 )
                 raise SandboxTimeoutError(
                     f"节点 {node_type} 执行超过 {self.timeout_sec}s 超时"
                 ) from e
 
-            duration = time.monotonic() - start
+            duration_ms = int((time.monotonic() - start) * 1000)
+
+            # 收集子进程资源用量 (Phase 3 B17)
+            cpu_seconds, mem_peak_mb = _collect_subprocess_resources(proc)
 
             if proc.returncode != 0:
                 # worker 进程异常退出 (崩溃/未捕获异常)
@@ -164,13 +224,25 @@ class SubprocessSandbox(SandboxBackend):
                     node_type=node_type,
                     returncode=proc.returncode,
                     stderr=stderr,
-                    duration_sec=round(duration, 2),
+                    duration_sec=round(duration_ms / 1000, 2),
                 )
                 # 区分 OOM (Linux OOM killer 写 dmesg, returncode 通常 -9 / 137)
                 if proc.returncode in (-9, 137):
+                    usage = SandboxResourceUsage(
+                        cpu_seconds=cpu_seconds,
+                        mem_peak_mb=mem_peak_mb,
+                        duration_ms=duration_ms,
+                        status="oom",
+                    )
                     raise SandboxOOMError(
                         f"节点 {node_type} 被 OOM killer 终止 (returncode={proc.returncode})"
                     )
+                usage = SandboxResourceUsage(
+                    cpu_seconds=cpu_seconds,
+                    mem_peak_mb=mem_peak_mb,
+                    duration_ms=duration_ms,
+                    status="failed",
+                )
                 raise SandboxError(
                     f"节点 {node_type} 子进程异常退出 (returncode={proc.returncode}): {stderr}"
                 )
@@ -194,24 +266,46 @@ class SubprocessSandbox(SandboxBackend):
                 if code == "SANDBOX_OOM":
                     raise SandboxOOMError(message) from None
                 # 业务错误透传 (保留原类型名称)
-
                 exc_cls_name = err.get("exception_type")
                 if exc_cls_name:
-                    # 不重建原异常类 (避免反射滥用), 直接抛 SandboxError 包装
                     raise SandboxError(f"{exc_cls_name}: {message} (details={details})") from None
                 raise SandboxError(message) from None
 
             _log.info(
                 "sandbox_subprocess_ok",
                 node_type=node_type,
-                duration_sec=round(duration, 2),
+                duration_sec=round(duration_ms / 1000, 2),
                 outputs_count=len(result) if isinstance(result, dict) else 0,
+                cpu_seconds=round(cpu_seconds, 3),
+                mem_peak_mb=round(mem_peak_mb, 1),
             )
-            return result  # type: ignore[return-value]
+            usage = SandboxResourceUsage(
+                cpu_seconds=cpu_seconds,
+                mem_peak_mb=mem_peak_mb,
+                duration_ms=duration_ms,
+                status="success",
+            )
+            return result, usage  # type: ignore[return-value]
 
         finally:
             with contextlib.suppress(OSError):
                 os.unlink(payload_path)
+
+
+# ===== 资源收集辅助 =====
+
+
+def _collect_subprocess_resources(proc: subprocess.CompletedProcess) -> tuple[float, float]:
+    """收集子进程 CPU + 峰值内存 (Phase 3 B17 埋点).
+
+    当前限制: subprocess.CompletedProcess 无 child rusage API, 跨平台子进程资源采集需
+    psutil / container-level metrics (K8s cAdvisor) 才能精确。简化版: 返回 (0, 0),
+    CPU/内存数据等 Phase 4 接 psutil 时补齐。
+
+    返回: ``(cpu_seconds, mem_peak_mb)``.
+    """
+    # 当前迭代: 返回 0; duration_ms 由主进程 time.monotonic() 计算
+    return 0.0, 0.0
 
 
 class DockerSandbox(SandboxBackend):
@@ -224,6 +318,13 @@ class DockerSandbox(SandboxBackend):
     async def execute(self, node_type: str, inputs: dict, params: dict) -> dict:
         raise NotImplementedError(
             "DockerSandbox 将在 B14 后续迭代实现, 当前请使用 sandbox_backend=subprocess"
+        )
+
+    async def execute_with_usage(
+        self, node_type: str, inputs: dict, params: dict
+    ) -> tuple[dict, SandboxResourceUsage]:
+        raise NotImplementedError(
+            "DockerSandbox 将在 B14 后续迭代实现"
         )
 
 
@@ -272,6 +373,7 @@ __all__ = [
     "SandboxBackend",
     "SandboxError",
     "SandboxOOMError",
+    "SandboxResourceUsage",
     "SandboxTimeoutError",
     "SubprocessSandbox",
     "get_sandbox_backend",
