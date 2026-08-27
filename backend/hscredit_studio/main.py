@@ -13,7 +13,7 @@ from hscredit_studio.core.config import settings
 from hscredit_studio.core.logging import setup_logging
 from hscredit_studio.api.exception_handlers import register_exception_handlers
 from hscredit_studio.api.v1 import health
-from hscredit_studio.api.v1 import audit, auth, nodes, workflows, runs, templates, ws
+from hscredit_studio.api.v1 import audit, auth, monitor, nodes, workflows, runs, templates, ws
 from hscredit_studio.middleware.tenant import TenantMiddleware
 from hscredit_studio.middleware.security import SecurityHeadersMiddleware
 from hscredit_studio.middleware.request_id import RequestIDMiddleware
@@ -76,6 +76,7 @@ app.include_router(runs.router, prefix="/api/v1/{tenant_slug}/runs", tags=["运�
 app.include_router(nodes.router, prefix="/api/v1/{tenant_slug}/node-definitions", tags=["节点定义"])
 app.include_router(templates.router, prefix="/api/v1/{tenant_slug}/templates", tags=["模板"])
 app.include_router(audit.router, prefix="/api/v1/{tenant_slug}/audit-events", tags=["审计"])
+app.include_router(monitor.router, prefix="/api/v1/{tenant_slug}/monitor", tags=["监控"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
 
