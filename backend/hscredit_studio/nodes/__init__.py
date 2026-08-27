@@ -31,6 +31,7 @@ from hscredit_studio.nodes.data_ingest import (
     excel_ingest,
     train_oot_split,
     field_type_infer,
+    reject_inference,
 )
 from hscredit_studio.nodes.eda import (
     missing_rate,
@@ -48,6 +49,8 @@ from hscredit_studio.nodes.feature_selection import (
 )
 from hscredit_studio.nodes.model_training import (
     logistic_regression,
+    shap_explanation,
+    xgboost,
 )
 from hscredit_studio.nodes.scorecard_rule import (
     score_card,
@@ -67,6 +70,7 @@ __all__ = [
     "excel_ingest",
     "train_oot_split",
     "field_type_infer",
+    "reject_inference",
     # EDA
     "missing_rate",
     "iv_analysis",
@@ -80,6 +84,8 @@ __all__ = [
     "vif_selector",
     # 模型训练
     "logistic_regression",
+    "shap_explanation",
+    "xgboost",
     # 评分卡与规则
     "score_card",
     "round_score_card",
