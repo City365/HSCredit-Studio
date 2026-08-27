@@ -165,6 +165,24 @@ async def submit_run(
     # 入 Celery 队列（协调器自行读取 WorkflowVersion.definition 并派发入度=0 节点）
     await RunCoordinator.enqueue_initial_nodes(run.run_id)
 
+    # 审计: Run 提交
+    from hscredit_studio.services import audit as audit_service
+    await audit_service.record_event(
+        session,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action=audit_service.AuditAction.WORKFLOW_RUN_SUBMIT,
+        resource_type=audit_service.ResourceType.RUN,
+        resource_id=run.run_id,
+        details={
+            "workflow_id": str(workflow_id),
+            "run_number": run.run_number,
+            "priority": req.priority,
+            "notes": req.notes,
+        },
+    )
+    await session.commit()
+
     return await get_run(session, tenant_id, run.run_id)
 
 
@@ -620,6 +638,23 @@ async def retry_node_execution(
 
     # 5. 重新入队
     run_node.apply_async(args=[str(node_exec_id)], queue="nodes-general")
+
+    # 6. 审计: 节点重试
+    from hscredit_studio.services import audit as audit_service
+    await audit_service.record_event(
+        session,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        action=audit_service.AuditAction.WORKFLOW_RUN_RETRY_NODE,
+        resource_type=audit_service.ResourceType.NODE_EXECUTION,
+        resource_id=ne.node_exec_id,
+        details={
+            "run_id": str(run.run_id),
+            "node_id": ne.node_id,
+            "node_type": ne.node_type,
+        },
+    )
+    await session.commit()
 
     return NodeRetryResponse(
         node_exec_id=ne.node_exec_id,

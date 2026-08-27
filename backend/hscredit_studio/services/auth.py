@@ -37,6 +37,7 @@ from hscredit_studio.core.security import (
     verify_password,
 )
 from hscredit_studio.models import Tenant, TenantMember, User
+from hscredit_studio.services import audit as audit_service
 from hscredit_studio.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -94,6 +95,15 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
         select(Tenant).where(Tenant.slug == req.tenant_slug, Tenant.deleted_at.is_(None))
     )
     if tenant is None:
+        # 审计: 失败登录 (租户不存在)
+        await audit_service.record_login(
+            session,
+            tenant_id=UUID(int=0),  # 占位,租户不存在
+            user_id=None,
+            success=False,
+            email=req.email,
+        )
+        await session.commit()
         raise AuthenticationError(f"租户 {req.tenant_slug} 不存在")
 
     # 2. 查用户（全平台唯一）
@@ -102,6 +112,14 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
     )
     if user is None or not verify_password(req.password, user.password_hash or ""):
         # 不区分用户不存在 / 密码错误，防止枚举
+        await audit_service.record_login(
+            session,
+            tenant_id=tenant.tenant_id,
+            user_id=None,
+            success=False,
+            email=req.email,
+        )
+        await session.commit()
         raise AuthenticationError("邮箱或密码错误")
 
     # 3. 校验用户在该租户的成员关系
@@ -113,6 +131,14 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
         )
     )
     if member is None:
+        await audit_service.record_login(
+            session,
+            tenant_id=tenant.tenant_id,
+            user_id=user.user_id,
+            success=False,
+            email=req.email,
+        )
+        await session.commit()
         raise TenantForbiddenError(f"用户 {req.email} 不属于租户 {req.tenant_slug}")
 
     # 4. 更新最后登录时间
@@ -121,6 +147,16 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
 
     # 5. 构造 token
     tokens = _build_token_pair(user, tenant, member.role)
+
+    # 6. 审计: 登录成功
+    await audit_service.record_login(
+        session,
+        tenant_id=tenant.tenant_id,
+        user_id=user.user_id,
+        success=True,
+        email=req.email,
+    )
+    await session.commit()
 
     # display_name 在 schema 中是必填 str，但 User.display_name 可空，
     # 这里回退到 email 本地部分（如 ``zhangsan@example.com`` → ``zhangsan``）。

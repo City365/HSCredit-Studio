@@ -23,6 +23,7 @@ const RunDetail = lazy(() => import('./pages/runs/Detail'));
 const TemplateGallery = lazy(() => import('./pages/templates/Gallery'));
 const MonitorDashboard = lazy(() => import('./pages/monitor/Dashboard'));
 const ModelRepository = lazy(() => import('./pages/models/Repository'));
+const AuditPage = lazy(() => import('./pages/audit/List'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const Loading = (): React.ReactElement => (
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
       { path: 'templates', element: <Suspense fallback={<Loading />}><TemplateGallery /></Suspense> },
       { path: 'monitor', element: <Suspense fallback={<Loading />}><MonitorDashboard /></Suspense> },
       { path: 'models', element: <Suspense fallback={<Loading />}><ModelRepository /></Suspense> },
+      { path: 'audit', element: <Suspense fallback={<Loading />}><AuditPage /></Suspense> },
     ],
   },
 

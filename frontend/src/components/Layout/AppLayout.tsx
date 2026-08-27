@@ -55,7 +55,7 @@ export function AppLayout() {
   // 从当前 URL 路径推断 Sidebar 选中项（取最长前缀匹配）
   const selectedKey = ((): string => {
     const path = location.pathname;
-    const candidates = ['/workflows', '/runs', '/templates', '/monitor', '/models'];
+    const candidates = ['/workflows', '/runs', '/templates', '/monitor', '/models', '/audit'];
     for (const c of candidates) {
       if (path === c || path.startsWith(`${c}/`)) return c;
     }

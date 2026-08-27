@@ -12,6 +12,7 @@ import {
   AppstoreOutlined,
   MonitorOutlined,
   DatabaseOutlined,
+  AuditOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -56,6 +57,12 @@ export function Sidebar({ selectedKey }: SidebarProps) {
       icon: <DatabaseOutlined />,
       label: t('menu.models'),
       onClick: () => navigate('/models'),
+    },
+    {
+      key: '/audit',
+      icon: <AuditOutlined />,
+      label: t('menu.audit', '审计日志'),
+      onClick: () => navigate('/audit'),
     },
   ];
 

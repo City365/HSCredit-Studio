@@ -27,6 +27,7 @@
     "templates": "Templates",
     "monitor": "Monitor",
     "models": "Models",
+    "audit": "Audit",
     "admin": "Admin",
     "profile": "Profile"
   },
