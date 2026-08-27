@@ -7,6 +7,7 @@
 - :mod:`workflow` — 工作流 CRUD、版本、react-flow 序列化
 - :mod:`run` — Run / NodeExecution / Artifact
 - :mod:`node_contract` — 节点契约（核心：节点注册表对外暴露）
+- :mod:`usage` — 租户用量查询 (Phase 4 B18)
 
 业务代码应 ``from hscredit_studio.schemas import ...`` 一次性导入。
 """
@@ -70,6 +71,11 @@ from hscredit_studio.schemas.run import (
     RunStatus,
     RunSubmitRequest,
 )
+from hscredit_studio.schemas.usage import (
+    DimensionUsage,
+    NodeTypeUsage,
+    TenantUsageResponse,
+)
 
 # ----- 工作流 -----
 from hscredit_studio.schemas.workflow import (
@@ -98,6 +104,8 @@ __all__ = [
     # node_contract
     "CacheConfig",
     "CacheStrategy",
+    # 用量 (Phase 4 B18)
+    "DimensionUsage",
     # workflow
     "EdgeDef",
     "ErrorDetail",
@@ -120,6 +128,8 @@ __all__ = [
     "NodePosition",
     "NodeTestRequest",
     "NodeTestResponse",
+    # 用量 (Phase 4 B18)
+    "NodeTypeUsage",
     "PaginatedResponse",
     "Pagination",
     "ParamChoice",
@@ -136,6 +146,7 @@ __all__ = [
     "RunStatus",
     "RunSubmitRequest",
     "SuccessResponse",
+    "TenantUsageResponse",
     "TimestampedSchema",
     "TokenPair",
     "UserInfo",
