@@ -12,7 +12,7 @@ from hscredit_studio.nodes.scorecard_rule.score_card import ScoreCardNode
 def test_score_card_node_contract():
     node = ScoreCardNode()
     assert node.contract.node_type == "score_card"
-    assert node.contract.category.value == "评分卡与规则"
+    assert node.contract.category == "评分卡与规则"
     assert any(p.name == "pdo" for p in node.contract.params)
     assert any(p.name == "base_score" for p in node.contract.params)
 
@@ -20,7 +20,7 @@ def test_score_card_node_contract():
 def test_round_score_card_node_contract():
     node = RoundScoreCardNode()
     assert node.contract.node_type == "round_score_card"
-    assert node.contract.category.value == "评分卡与规则"
+    assert node.contract.category == "评分卡与规则"
 
 
 def test_round_score_card_missing_input_raises():

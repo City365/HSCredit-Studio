@@ -40,13 +40,16 @@ class HSCreditWorkflowError(Exception):
         Returns
         -------
         dict
-            ``{"code": ..., "message": ..., "details": ...}``
+            ``{"code": ..., "message": ...[, "details": ...]}``
+            无 details 时省略 "details" 键。
         """
-        return {
+        result: dict[str, Any] = {
             "code": self.code,
             "message": self.message,
-            "details": self.details,
         }
+        if self.details:
+            result["details"] = self.details
+        return result
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}(code={self.code!r}, message={self.message!r})"

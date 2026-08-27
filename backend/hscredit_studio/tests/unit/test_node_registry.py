@@ -5,7 +5,7 @@ import pytest
 from hscredit_studio.core.exceptions import NodeNotFoundError
 from hscredit_studio.nodes.base import BaseNode
 from hscredit_studio.nodes.registry import NodeRegistry, register_node
-from hscredit_studio.schemas.node_contract import NodeCategory, NodeContract
+from hscredit_studio.schemas.node_contract import NodeContract
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +21,7 @@ def test_register_node():
     class TestNode(BaseNode):
         contract = NodeContract(
             node_type="test_node",
-            category=NodeCategory("数据接入"),
+            category="数据接入",
             name="Test",
             description="test node",
         )
@@ -39,7 +39,7 @@ def test_register_duplicate_raises():
     class TestNode(BaseNode):
         contract = NodeContract(
             node_type="test_dup",
-            category=NodeCategory("数据接入"),
+            category="数据接入",
             name="Test",
             description="",
         )
@@ -53,7 +53,7 @@ def test_register_duplicate_raises():
         class AnotherTestNode(BaseNode):
             contract = NodeContract(
                 node_type="test_dup",
-                category=NodeCategory("数据接入"),
+                category="数据接入",
                 name="Test2",
                 description="",
             )
@@ -76,7 +76,7 @@ def test_list_by_category():
     class DataIngest(BaseNode):
         contract = NodeContract(
             node_type="data_1",
-            category=NodeCategory("数据接入"),
+            category="数据接入",
             name="Data1",
             description="",
         )
@@ -88,7 +88,7 @@ def test_list_by_category():
     class Model(BaseNode):
         contract = NodeContract(
             node_type="model_1",
-            category=NodeCategory("模型训练"),
+            category="模型训练",
             name="Model1",
             description="",
         )
@@ -96,7 +96,7 @@ def test_list_by_category():
         def run(self, inputs, params):
             return {}
 
-    data_nodes = NodeRegistry.list_by_category(NodeCategory("数据接入"))
+    data_nodes = NodeRegistry.list_by_category("数据接入")
     assert len(data_nodes) == 1
     assert data_nodes[0].contract.node_type == "data_1"
 
@@ -106,7 +106,7 @@ def test_list_contracts():
     class TestNode(BaseNode):
         contract = NodeContract(
             node_type="test_a",
-            category=NodeCategory("数据接入"),
+            category="数据接入",
             name="A",
             description="",
         )
@@ -128,7 +128,7 @@ def test_register_node_with_all_7_categories():
         class N(BaseNode):
             contract = NodeContract(
                 node_type=f"node_{i}",
-                category=NodeCategory(cat),
+                category=cat,
                 name=f"Node {i}",
                 description="",
             )
@@ -150,7 +150,7 @@ def test_unregister_node():
     class TmpNode(BaseNode):
         contract = NodeContract(
             node_type="tmp_node",
-            category=NodeCategory("EDA"),
+            category="EDA",
             name="Tmp",
             description="",
         )
@@ -173,14 +173,14 @@ def test_unregister_nonexistent_is_noop():
 def test_list_all_returns_all_registered():
     @register_node
     class A(BaseNode):
-        contract = NodeContract(node_type="a", category=NodeCategory("EDA"), name="A", description="")
+        contract = NodeContract(node_type="a", category="EDA", name="A", description="")
 
         def run(self, inputs, params):
             return {}
 
     @register_node
     class B(BaseNode):
-        contract = NodeContract(node_type="b", category=NodeCategory("EDA"), name="B", description="")
+        contract = NodeContract(node_type="b", category="EDA", name="B", description="")
 
         def run(self, inputs, params):
             return {}

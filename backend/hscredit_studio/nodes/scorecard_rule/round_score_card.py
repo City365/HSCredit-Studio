@@ -47,9 +47,15 @@ def _find_score_column(columns: list[str]) -> str | None:
         lc = str(col).lower()
         if "对应分数" in str(col) or lc == "score" or "score_value" in lc:
             return col
-    # 2) 含 "分" 或 "score" 的兜底匹配
+    # 2) 精确匹配 "分数"
+    for col in columns:
+        if str(col) == "分数":
+            return col
+    # 3) 含 "score" 的兜底匹配（排除含"分箱"的列）
     for col, lc in zip(columns, lowered, strict=False):
-        if "分" in str(col) or "score" in lc:
+        if "分箱" in str(col):
+            continue
+        if "score" in lc:
             return col
     return None
 

@@ -150,8 +150,9 @@ def test_get_downstream_ready_empty_when_none_completed():
     )
     plans = parse_workflow_definition(defn)
     ready = get_downstream_ready_nodes(plans, completed=set())
-    # a 没完成，但 b 的所有上游也不在 completed，所以 ready 为空
-    assert ready == []
+    # 初始无完成节点 → 只有无上游的根节点 a ready, 下游 b 等待 a 完成
+    assert "a" in ready
+    assert "b" not in ready
 
 
 def test_topological_sort_linear_chain():

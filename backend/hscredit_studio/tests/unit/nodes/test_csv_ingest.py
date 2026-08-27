@@ -33,7 +33,8 @@ def test_csv_ingest_basic(sample_csv):
     assert len(df) == 3
     assert list(df.columns) == ["id", "name", "score"]
     assert schema["id"] in ("int64", "int32")
-    assert schema["name"] == "object"
+    # pandas 2.x 字符串列返回 'str' (StringDtype); 旧版本返回 'object'
+    assert schema["name"] in ("object", "str")
 
 
 def test_csv_ingest_missing_path():
@@ -58,7 +59,7 @@ def test_csv_ingest_validate_params():
 def test_csv_ingest_contract_metadata():
     node = CSVIngestNode()
     assert node.contract.node_type == "csv_ingest"
-    assert node.contract.category.value == "数据接入"
+    assert node.contract.category == "数据接入"
     assert "DataFrame" in {p.type for p in node.contract.outputs}
 
 
