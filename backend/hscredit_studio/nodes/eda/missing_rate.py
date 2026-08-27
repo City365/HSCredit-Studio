@@ -3,6 +3,7 @@
 直接计算 DataFrame 每列的 ``isna()`` 比例与计数,
 并按 ``threshold`` 阈值标记「是否高缺失」列。
 """
+
 from __future__ import annotations
 
 from typing import Any

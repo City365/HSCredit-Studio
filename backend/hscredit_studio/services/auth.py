@@ -21,7 +21,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID
 
 from jose import JWTError
@@ -37,13 +37,13 @@ from hscredit_studio.core.security import (
     verify_password,
 )
 from hscredit_studio.models import Tenant, TenantMember, User
-from hscredit_studio.services import audit as audit_service
 from hscredit_studio.schemas.auth import (
     LoginRequest,
     LoginResponse,
     TokenPair,
     UserInfo,
 )
+from hscredit_studio.services import audit as audit_service
 
 
 def _build_token_pair(user: User, tenant: Tenant, role: str) -> TokenPair:
@@ -91,9 +91,7 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
         用户不属于该租户或成员关系非 active。
     """
     # 1. 查租户
-    tenant = await session.scalar(
-        select(Tenant).where(Tenant.slug == req.tenant_slug, Tenant.deleted_at.is_(None))
-    )
+    tenant = await session.scalar(select(Tenant).where(Tenant.slug == req.tenant_slug, Tenant.deleted_at.is_(None)))
     if tenant is None:
         # 审计: 失败登录 (租户不存在)
         await audit_service.record_login(
@@ -107,9 +105,7 @@ async def authenticate(session: AsyncSession, req: LoginRequest) -> LoginRespons
         raise AuthenticationError(f"租户 {req.tenant_slug} 不存在")
 
     # 2. 查用户（全平台唯一）
-    user = await session.scalar(
-        select(User).where(User.email == req.email, User.deleted_at.is_(None))
-    )
+    user = await session.scalar(select(User).where(User.email == req.email, User.deleted_at.is_(None)))
     if user is None or not verify_password(req.password, user.password_hash or ""):
         # 不区分用户不存在 / 密码错误，防止枚举
         await audit_service.record_login(
@@ -243,4 +239,4 @@ async def logout(
     _ = (session, refresh_token, user_id)
 
 
-__all__ = ["authenticate", "refresh_tokens", "logout"]
+__all__ = ["authenticate", "logout", "refresh_tokens"]

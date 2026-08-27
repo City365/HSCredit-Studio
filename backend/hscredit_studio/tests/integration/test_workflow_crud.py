@@ -1,5 +1,7 @@
 """集成测试 — 工作流 CRUD（占位：实际跑需要 testcontainers PG）."""
+
 import pytest
+
 
 # Phase 1.5 接入 testcontainers 后启用这些测试
 @pytest.mark.skip(reason="需 testcontainers PG，跳过 Phase 1 验收")

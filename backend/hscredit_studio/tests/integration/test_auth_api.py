@@ -2,6 +2,7 @@
 
 Phase 1 默认 skip（无 PG 环境）；Phase 1.5 启用。
 """
+
 import pytest
 
 
@@ -10,9 +11,11 @@ import pytest
 @pytest.mark.asyncio
 async def test_login_invalid_credentials():
     """错误密码应返回 401."""
-    from httpx import AsyncClient, ASGITransport
-    from hscredit_studio.main import app
+    from httpx import ASGITransport, AsyncClient
+
     from hscredit_studio.api.exception_handlers import register_exception_handlers
+    from hscredit_studio.main import app
+
     register_exception_handlers(app)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -32,9 +35,11 @@ async def test_login_invalid_credentials():
 @pytest.mark.asyncio
 async def test_login_validation_error():
     """缺字段应返回 400 E_VALIDATION_INPUT."""
-    from httpx import AsyncClient, ASGITransport
-    from hscredit_studio.main import app
+    from httpx import ASGITransport, AsyncClient
+
     from hscredit_studio.api.exception_handlers import register_exception_handlers
+    from hscredit_studio.main import app
+
     register_exception_handlers(app)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

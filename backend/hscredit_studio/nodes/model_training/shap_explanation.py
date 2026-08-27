@@ -5,6 +5,7 @@
 - ``importance`` (DataFrame) — 排序好的特征重要性表 (特征 / 平均 SHAP / 标准差)
 - ``summary_path`` (str) — 摘要图 PNG 本地路径 (供前端展示)
 """
+
 from __future__ import annotations
 
 import os
@@ -74,7 +75,7 @@ class ShapExplanationNode(BaseNode):
 
     def run(self, inputs: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
         try:
-            import shap  # noqa: F401
+            import shap
         except ImportError as e:
             raise DependencyError(
                 "SHAP 库未安装, 请 pip install shap",
@@ -109,10 +110,7 @@ class ShapExplanationNode(BaseNode):
 
         # 取样 (SHAP 计算开销随样本数线性增长)
         X = df[features].copy()
-        if len(X) > max_samples:
-            X_sample = X.sample(n=max_samples, random_state=42)
-        else:
-            X_sample = X
+        X_sample = X.sample(n=max_samples, random_state=42) if len(X) > max_samples else X
 
         # 自动选择 explainer
         # sklearn 树模型 → TreeExplainer; 其它 → KernelExplainer
@@ -144,26 +142,27 @@ class ShapExplanationNode(BaseNode):
             ) from e
 
         # 处理二分类返回 list 的情况
-        if isinstance(shap_values, list):
-            sv = np.array(shap_values[-1])  # 正类
-        else:
-            sv = np.array(shap_values)
+        sv = np.array(shap_values[-1]) if isinstance(shap_values, list) else np.array(shap_values)
         if sv.ndim == 3:
             sv = sv[:, :, -1]
 
         # 计算特征重要性
         mean_abs = np.abs(sv).mean(axis=0)
         std_abs = np.abs(sv).std(axis=0)
-        importance = pd.DataFrame(
-            {
-                "feature": features,
-                "mean_abs_shap": mean_abs,
-                "std_abs_shap": std_abs,
-            }
-        ).sort_values("mean_abs_shap", ascending=False).reset_index(drop=True)
+        importance = (
+            pd.DataFrame(
+                {
+                    "feature": features,
+                    "mean_abs_shap": mean_abs,
+                    "std_abs_shap": std_abs,
+                }
+            )
+            .sort_values("mean_abs_shap", ascending=False)
+            .reset_index(drop=True)
+        )
 
         # 输出 dict
-        shap_dict = {f: float(v) for f, v in zip(features, mean_abs)}
+        shap_dict = {f: float(v) for f, v in zip(features, mean_abs, strict=False)}
 
         # 生成摘要图 (PNG)
         os.makedirs(output_dir, exist_ok=True)
@@ -183,6 +182,7 @@ class ShapExplanationNode(BaseNode):
             # 摘要图生成失败, 但 SHAP 值已算好, 不阻塞
             summary_path = ""
             import logging
+
             logging.getLogger(__name__).warning(f"SHAP summary plot failed: {e}")
 
         return {

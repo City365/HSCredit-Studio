@@ -7,6 +7,7 @@
 
 依赖: pip install hscredit[boost] (xgboost)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -42,7 +43,9 @@ class XGBoostNode(BaseNode):
         outputs=[
             PortSchema(name="model", type="ModelArtifact", description="训练好的 XGBoost 模型"),
             PortSchema(name="metrics", type="JSON", description="训练集评估指标 (AUC/KS/Gini)"),
-            PortSchema(name="importance", type="DataFrame", description="特征重要性 (gain/cover/weight/total_gain/total_cover)"),
+            PortSchema(
+                name="importance", type="DataFrame", description="特征重要性 (gain/cover/weight/total_gain/total_cover)"
+            ),
         ],
         params=[
             ParamSpec(name="target", type="str", label="目标列名", required=True),
@@ -50,11 +53,23 @@ class XGBoostNode(BaseNode):
             ParamSpec(name="n_estimators", type="int", label="树数量 (boosting rounds)", default=300, min=10, max=5000),
             ParamSpec(name="max_depth", type="int", label="树最大深度", default=6, min=2, max=20),
             ParamSpec(name="learning_rate", type="float", label="学习率 (eta)", default=0.1, min=0.001, max=1.0),
-            ParamSpec(name="subsample", type="float", label="样本采样比例", default=1.0, min=0.1, max=1.0, advanced=True),
-            ParamSpec(name="colsample_bytree", type="float", label="特征采样比例", default=1.0, min=0.1, max=1.0, advanced=True),
+            ParamSpec(
+                name="subsample", type="float", label="样本采样比例", default=1.0, min=0.1, max=1.0, advanced=True
+            ),
+            ParamSpec(
+                name="colsample_bytree",
+                type="float",
+                label="特征采样比例",
+                default=1.0,
+                min=0.1,
+                max=1.0,
+                advanced=True,
+            ),
             ParamSpec(name="reg_lambda", type="float", label="L2 正则", default=1.0, min=0.0, advanced=True),
             ParamSpec(name="reg_alpha", type="float", label="L1 正则", default=0.0, min=0.0, advanced=True),
-            ParamSpec(name="early_stopping_rounds", type="int", label="早停轮数", default=30, min=0, max=200, advanced=True),
+            ParamSpec(
+                name="early_stopping_rounds", type="int", label="早停轮数", default=30, min=0, max=200, advanced=True
+            ),
             ParamSpec(name="random_state", type="int", label="随机种子", default=42, advanced=True),
         ],
         cache=CacheConfig(),
@@ -97,6 +112,7 @@ class XGBoostNode(BaseNode):
 
         # 划分 train/val (8:2) 用于 early stopping
         from sklearn.model_selection import train_test_split
+
         X_tr, X_va, y_tr, y_va = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
         model_kwargs = {
@@ -124,9 +140,11 @@ class XGBoostNode(BaseNode):
         metrics: dict[str, Any] = {}
         try:
             from sklearn.metrics import roc_auc_score
+
             y_pred_proba = model.predict_proba(X)[:, 1]
             metrics["auc"] = float(roc_auc_score(y, y_pred_proba))
             from hscredit.core.metrics import ks as ks_func
+
             metrics["ks"] = float(ks_func(y, y_pred_proba))
             metrics["gini"] = 2 * metrics["auc"] - 1
         except Exception as e:

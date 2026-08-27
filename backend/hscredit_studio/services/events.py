@@ -3,6 +3,7 @@
 Phase 1 用于 WebSocket 实时推流，Phase 2 可扩展到日志聚合 / 告警通知。
 所有 publish 调用都是 fire-and-forget（不阻塞主流程），失败时仅记录 warn 日志。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -84,7 +85,7 @@ def publish_event_sync(
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
-            loop.create_task(publish_event(run_id, event_type, **payload))
+            _task = loop.create_task(publish_event(run_id, event_type, **payload))  # noqa: RUF006
         else:
             loop.run_until_complete(publish_event(run_id, event_type, **payload))
     except RuntimeError:

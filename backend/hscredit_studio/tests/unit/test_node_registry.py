@@ -1,9 +1,11 @@
 """单元测试 — NodeRegistry."""
+
 import pytest
+
+from hscredit_studio.core.exceptions import NodeNotFoundError
 from hscredit_studio.nodes.base import BaseNode
 from hscredit_studio.nodes.registry import NodeRegistry, register_node
-from hscredit_studio.schemas.node_contract import NodeContract, NodeCategory, PortSchema, ParamSpec, CacheConfig
-from hscredit_studio.core.exceptions import NodeNotFoundError
+from hscredit_studio.schemas.node_contract import NodeCategory, NodeContract
 
 
 @pytest.fixture(autouse=True)
@@ -23,6 +25,7 @@ def test_register_node():
             name="Test",
             description="test node",
         )
+
         def run(self, inputs, params):
             return {}
 
@@ -40,9 +43,12 @@ def test_register_duplicate_raises():
             name="Test",
             description="",
         )
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     with pytest.raises(ValueError, match="已被"):
+
         @register_node
         class AnotherTestNode(BaseNode):
             contract = NodeContract(
@@ -51,7 +57,9 @@ def test_register_duplicate_raises():
                 name="Test2",
                 description="",
             )
-            def run(self, inputs, params): return {}
+
+            def run(self, inputs, params):
+                return {}
 
 
 def test_get_nonexistent_node():
@@ -72,7 +80,9 @@ def test_list_by_category():
             name="Data1",
             description="",
         )
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     @register_node
     class Model(BaseNode):
@@ -82,7 +92,9 @@ def test_list_by_category():
             name="Model1",
             description="",
         )
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     data_nodes = NodeRegistry.list_by_category(NodeCategory("数据接入"))
     assert len(data_nodes) == 1
@@ -98,7 +110,9 @@ def test_list_contracts():
             name="A",
             description="",
         )
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     contracts = NodeRegistry.list_contracts()
     assert len(contracts) == 1
@@ -109,6 +123,7 @@ def test_register_node_with_all_7_categories():
     """所有 7 个分类都能注册."""
     categories = ["数据接入", "EDA", "特征工程", "特征筛选", "模型训练", "评分卡与规则", "报告与部署"]
     for i, cat in enumerate(categories):
+
         @register_node
         class N(BaseNode):
             contract = NodeContract(
@@ -117,7 +132,9 @@ def test_register_node_with_all_7_categories():
                 name=f"Node {i}",
                 description="",
             )
-            def run(self, inputs, params): return {}
+
+            def run(self, inputs, params):
+                return {}
 
     assert NodeRegistry.count() == 7
 
@@ -137,7 +154,9 @@ def test_unregister_node():
             name="Tmp",
             description="",
         )
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     assert NodeRegistry.count() == 1
     NodeRegistry.unregister("tmp_node")
@@ -155,12 +174,16 @@ def test_list_all_returns_all_registered():
     @register_node
     class A(BaseNode):
         contract = NodeContract(node_type="a", category=NodeCategory("EDA"), name="A", description="")
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     @register_node
     class B(BaseNode):
         contract = NodeContract(node_type="b", category=NodeCategory("EDA"), name="B", description="")
-        def run(self, inputs, params): return {}
+
+        def run(self, inputs, params):
+            return {}
 
     all_nodes = NodeRegistry.list_all()
     assert len(all_nodes) == 2

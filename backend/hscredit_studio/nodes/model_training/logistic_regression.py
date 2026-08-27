@@ -6,11 +6,10 @@
 - 评估训练集 AUC / KS / Gini 等指标
 - 输出 ``model`` 与 ``metrics`` 字典;``metrics`` 字段供下游报告节点使用
 """
+
 from __future__ import annotations
 
 from typing import Any
-
-import pandas as pd
 
 from hscredit_studio.core.exceptions import (
     DependencyError,
@@ -145,13 +144,13 @@ class LogisticRegressionNode(BaseNode):
         y = df[target]
 
         penalty = params.get("penalty", "l2")
-        kwargs: dict[str, Any] = dict(
-            C=float(params.get("C", 1.0)),
-            penalty=penalty,
-            max_iter=int(params.get("max_iter", 1000)),
-            random_state=int(params.get("random_state", 42)),
-            calculate_stats=True,
-        )
+        kwargs: dict[str, Any] = {
+            "C": float(params.get("C", 1.0)),
+            "penalty": penalty,
+            "max_iter": int(params.get("max_iter", 1000)),
+            "random_state": int(params.get("random_state", 42)),
+            "calculate_stats": True,
+        }
         # 仅在 elasticnet 时需要 l1_ratio, 设为常用值
         if penalty == "elasticnet":
             kwargs["l1_ratio"] = 0.5

@@ -1,6 +1,10 @@
 """ScoreCard + RoundScoreCard 节点 smoke test (mocked)."""
+
+from unittest.mock import MagicMock
+
 import pytest
-from unittest.mock import MagicMock, patch
+
+from hscredit_studio.core.exceptions import ValidationError
 from hscredit_studio.nodes.scorecard_rule.round_score_card import RoundScoreCardNode
 from hscredit_studio.nodes.scorecard_rule.score_card import ScoreCardNode
 
@@ -23,6 +27,7 @@ def test_round_score_card_missing_input_raises():
     """未传 score_card 应抛 FeatureNotFoundError."""
     node = RoundScoreCardNode()
     from hscredit_studio.core.exceptions import FeatureNotFoundError
+
     with pytest.raises(FeatureNotFoundError):
         node.run(inputs={}, params={"decimal": 0})
 
@@ -31,6 +36,7 @@ def test_round_score_card_rejects_non_scorecard_object():
     """传入没有 scorecard_points 方法的对象应抛 DependencyError."""
     node = RoundScoreCardNode()
     from hscredit_studio.core.exceptions import DependencyError
+
     bogus = MagicMock(spec=[])  # 没有任何方法
     with pytest.raises(DependencyError):
         node.run(inputs={"score_card": bogus}, params={"decimal": 0})
@@ -39,9 +45,9 @@ def test_round_score_card_rejects_non_scorecard_object():
 def test_score_card_node_validates_features_param():
     """features 必须是非空列表."""
     node = ScoreCardNode()
-    from hscredit_studio.core.exceptions import ValidationError
+
     # features 为 None 应抛错
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         # 触发 validate_params 即可
         node.validate_params({"target": "FPD", "features": None})
 
@@ -57,15 +63,18 @@ def test_score_card_node_required_params():
 def test_round_score_card_rounds_scores():
     """圆整节点对传入的 score_points 做整数化."""
     import pandas as pd
+
     node = RoundScoreCardNode()
 
     # 真实 DataFrame（便于 copy/astype/round/clip）
-    df = pd.DataFrame({
-        "变量名": ["x1", "x2", "x3"],
-        "分箱": ["bin1", "bin2", "bin3"],
-        "分箱WOE值": [0.1, -0.2, 0.0],
-        "分数": [100.4, 200.6, 300.2],
-    })
+    df = pd.DataFrame(
+        {
+            "变量名": ["x1", "x2", "x3"],
+            "分箱": ["bin1", "bin2", "bin3"],
+            "分箱WOE值": [0.1, -0.2, 0.0],
+            "分数": [100.4, 200.6, 300.2],
+        }
+    )
 
     mock_sc = MagicMock()
     mock_sc.scorecard_points.return_value = df
@@ -80,14 +89,17 @@ def test_round_score_card_rounds_scores():
 def test_round_score_card_clamps_to_min_max():
     """min_score / max_score 应截断分数."""
     import pandas as pd
+
     node = RoundScoreCardNode()
 
-    df = pd.DataFrame({
-        "变量名": ["x1"],
-        "分箱": ["bin1"],
-        "分箱WOE值": [0.1],
-        "分数": [999.0],
-    })
+    df = pd.DataFrame(
+        {
+            "变量名": ["x1"],
+            "分箱": ["bin1"],
+            "分箱WOE值": [0.1],
+            "分数": [999.0],
+        }
+    )
     mock_sc = MagicMock()
     mock_sc.scorecard_points.return_value = df
 

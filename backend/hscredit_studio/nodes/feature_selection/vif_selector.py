@@ -5,6 +5,7 @@
 
 VIF 筛选无需目标列(共线性计算仅依赖特征矩阵)。
 """
+
 from __future__ import annotations
 
 from typing import Any

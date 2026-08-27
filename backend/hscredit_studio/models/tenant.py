@@ -17,10 +17,10 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
-    UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hscredit_studio.core.database import Base
@@ -30,7 +30,6 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
-
 
 # ===== Enum 值常量（用于 alembic 与 ORM 共享） =====
 
@@ -96,20 +95,18 @@ class Tenant(Base, TimestampMixin, SoftDeleteMixin, ModelSerializerMixin):
     )
 
     # 关系
-    members: Mapped[list["TenantMember"]] = relationship(
+    members: Mapped[list[TenantMember]] = relationship(
         "TenantMember",
         back_populates="tenant",
         cascade="save-update",
     )
-    invitations: Mapped[list["UserInvitation"]] = relationship(
+    invitations: Mapped[list[UserInvitation]] = relationship(
         "UserInvitation",
         back_populates="tenant",
         cascade="save-update",
     )
 
-    __table_args__ = (
-        Index("ix_tenants_status", "status"),
-    )
+    __table_args__ = (Index("ix_tenants_status", "status"),)
 
 
 class TenantMember(Base, TimestampMixin, ModelSerializerMixin):
@@ -158,7 +155,7 @@ class TenantMember(Base, TimestampMixin, ModelSerializerMixin):
     )
 
     # 关系
-    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="members")
+    tenant: Mapped[Tenant] = relationship("Tenant", back_populates="members")
 
     __table_args__ = (
         # 通过列定义已声明 PK；此处仅声明按需索引
@@ -208,7 +205,7 @@ class UserInvitation(Base, TimestampMixin, ModelSerializerMixin):
     )
 
     # 关系
-    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="invitations")
+    tenant: Mapped[Tenant] = relationship("Tenant", back_populates="invitations")
 
 
 class ApiKey(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializerMixin):
@@ -255,12 +252,12 @@ class ApiKey(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializer
 
 
 __all__ = [
-    "PLAN_VALUES",
-    "TENANT_STATUS_VALUES",
     "MEMBER_ROLE_VALUES",
     "MEMBER_STATUS_VALUES",
+    "PLAN_VALUES",
+    "TENANT_STATUS_VALUES",
+    "ApiKey",
     "Tenant",
     "TenantMember",
     "UserInvitation",
-    "ApiKey",
 ]

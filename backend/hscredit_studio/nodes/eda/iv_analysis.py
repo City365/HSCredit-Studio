@@ -6,6 +6,7 @@
 - 给出中文预测能力评级(极强/强/中等/弱/极弱/无)。
 - 单特征报错时,记录失败原因而非中断整批分析。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -13,7 +14,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from hscredit_studio.core.exceptions import DependencyError, ValidationError
+from hscredit_studio.core.exceptions import ValidationError
 from hscredit_studio.nodes.base import BaseNode
 from hscredit_studio.nodes.registry import register_node
 from hscredit_studio.schemas.node_contract import (
@@ -61,9 +62,7 @@ def _fallback_iv(x: pd.Series, y: pd.Series, max_n_bins: int = 5) -> float:
     for _, sub in grouped:
         bad = max(float((sub["y"] == 1).sum()), 0.5)
         good = max(float((sub["y"] == 0).sum()), 0.5)
-        iv_total += (bad / total_bad - good / total_good) * np.log(
-            (bad / total_bad) / (good / total_good)
-        )
+        iv_total += (bad / total_bad - good / total_good) * np.log((bad / total_bad) / (good / total_good))
     return float(iv_total)
 
 
@@ -168,16 +167,12 @@ class IVAnalysisNode(BaseNode):
         results: list[dict[str, Any]] = []
         for feat in features:
             if feat not in df.columns:
-                results.append(
-                    {"特征名": feat, "IV值": None, "预测力": f"特征不存在: {feat}"}
-                )
+                results.append({"特征名": feat, "IV值": None, "预测力": f"特征不存在: {feat}"})
                 continue
             try:
                 iv_value = _IV_ADAPTER.compute(df, feat, target, max_n_bins)
                 if iv_value is None:
-                    results.append(
-                        {"特征名": feat, "IV值": None, "预测力": "分析失败"}
-                    )
+                    results.append({"特征名": feat, "IV值": None, "预测力": "分析失败"})
                 else:
                     results.append(
                         {
@@ -186,7 +181,7 @@ class IVAnalysisNode(BaseNode):
                             "预测力": _rate_iv(iv_value),
                         }
                     )
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 results.append(
                     {
                         "特征名": feat,
@@ -195,7 +190,5 @@ class IVAnalysisNode(BaseNode):
                     }
                 )
 
-        iv_df = pd.DataFrame(results).sort_values(
-            "IV值", ascending=False, na_position="last"
-        )
+        iv_df = pd.DataFrame(results).sort_values("IV值", ascending=False, na_position="last")
         return {"iv_df": iv_df, "df": df}

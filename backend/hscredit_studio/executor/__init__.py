@@ -12,6 +12,7 @@
 
 子模块按依赖顺序加载(parser → coordinator → tasks)。
 """
+
 from __future__ import annotations
 
 from hscredit_studio.executor.coordinator import RunCoordinator
@@ -26,16 +27,16 @@ from hscredit_studio.executor.parser import (
 from hscredit_studio.executor.tasks import run_heavy_node, run_node
 
 __all__ = [
-    # parser
-    "WorkflowParser",
     "NodeExecutionPlan",
-    "parse_workflow_definition",
-    "topological_sort",
-    "get_initial_nodes",
-    "get_downstream_ready_nodes",
     # coordinator
     "RunCoordinator",
+    # parser
+    "WorkflowParser",
+    "get_downstream_ready_nodes",
+    "get_initial_nodes",
+    "parse_workflow_definition",
+    "run_heavy_node",
     # tasks
     "run_node",
-    "run_heavy_node",
+    "topological_sort",
 ]

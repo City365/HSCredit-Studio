@@ -23,7 +23,6 @@ from hscredit_studio.models.base import (
     TimestampMixin,
 )
 
-
 USER_STATUS_VALUES = ("active", "locked", "disabled")
 """User.status 枚举值."""
 

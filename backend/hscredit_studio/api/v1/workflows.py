@@ -5,6 +5,7 @@
 路由前缀：``/api/v1/{tenant_slug}/workflows``（见 ``main.py``）。
 所有端点均需鉴权（``CurrentUserDep``）+ 租户隔离（``TenantDep``）。
 """
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -13,6 +14,7 @@ from fastapi import APIRouter, Query, status
 
 from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
 from hscredit_studio.schemas.common import PaginatedResponse
+from hscredit_studio.schemas.run import RunResponse, RunSubmitRequest
 from hscredit_studio.schemas.workflow import (
     WorkflowCreate,
     WorkflowExportResponse,
@@ -23,7 +25,6 @@ from hscredit_studio.schemas.workflow import (
     WorkflowVersionCreate,
     WorkflowVersionResponse,
 )
-from hscredit_studio.schemas.run import RunResponse, RunSubmitRequest
 from hscredit_studio.services import run as run_service
 from hscredit_studio.services import workflow as wf_service
 
@@ -42,7 +43,7 @@ router = APIRouter(tags=["工作流"])
 async def list_workflows(
     session: SessionDep,
     tenant_id: TenantDep,
-    user: CurrentUserDep,  # noqa: ARG001 — 仅用于鉴权
+    user: CurrentUserDep,
     page: int = Query(default=1, ge=1, description="页码"),
     page_size: int = Query(default=20, ge=1, le=200, description="每页条数"),
     search: str | None = Query(default=None, description="模糊匹配 name / description"),
@@ -109,9 +110,7 @@ async def get_workflow(
     "/{workflow_id}",
     response_model=WorkflowResponse,
     summary="更新工作流",
-    description=(
-        "PATCH 语义：字段部分更新；若 ``definition`` 变更则自动创建新版本号 +1"
-    ),
+    description=("PATCH 语义：字段部分更新；若 ``definition`` 变更则自动创建新版本号 +1"),
 )
 async def update_workflow(
     workflow_id: UUID,
@@ -121,9 +120,7 @@ async def update_workflow(
     user: CurrentUserDep,
 ) -> WorkflowResponse:
     user_id = UUID(user["sub"])
-    return await wf_service.update_workflow(
-        session, UUID(tenant_id), user_id, workflow_id, req
-    )
+    return await wf_service.update_workflow(session, UUID(tenant_id), user_id, workflow_id, req)
 
 
 @router.delete(
@@ -172,9 +169,7 @@ async def create_version(
     user: CurrentUserDep,
 ) -> WorkflowVersionResponse:
     user_id = UUID(user["sub"])
-    return await wf_service.create_version(
-        session, UUID(tenant_id), user_id, workflow_id, req
-    )
+    return await wf_service.create_version(session, UUID(tenant_id), user_id, workflow_id, req)
 
 
 @router.get(
@@ -189,9 +184,7 @@ async def get_version(
     session: SessionDep,
     tenant_id: TenantDep,
 ) -> WorkflowVersionResponse:
-    return await wf_service.get_version(
-        session, UUID(tenant_id), workflow_id, version_number
-    )
+    return await wf_service.get_version(session, UUID(tenant_id), workflow_id, version_number)
 
 
 # ===== Run 提交 =====
@@ -212,9 +205,7 @@ async def submit_run(
     user: CurrentUserDep,
 ) -> RunResponse:
     user_id = UUID(user["sub"])
-    return await run_service.submit_run(
-        session, UUID(tenant_id), user_id, workflow_id, req
-    )
+    return await run_service.submit_run(session, UUID(tenant_id), user_id, workflow_id, req)
 
 
 # ===== 导入 / 导出 =====

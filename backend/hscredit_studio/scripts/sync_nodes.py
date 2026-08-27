@@ -2,6 +2,7 @@
 
 新增节点 (批次 12) 需要插入到 DB node_definitions 表才能在前端显示.
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -36,9 +37,7 @@ async def main():
                 else getattr(contract.category, "value", str(contract.category))
             )
 
-            existing = await session.scalar(
-                select(NodeDefinition).where(NodeDefinition.node_type == node_type)
-            )
+            existing = await session.scalar(select(NodeDefinition).where(NodeDefinition.node_type == node_type))
             if existing:
                 print(f"~ {node_type}: already exists, skipping")
                 continue
@@ -67,8 +66,7 @@ async def main():
                         for p in contract.inputs
                     ],
                     "outputs": [
-                        {"name": p.name, "type": p.type, "description": p.description}
-                        for p in contract.outputs
+                        {"name": p.name, "type": p.type, "description": p.description} for p in contract.outputs
                     ],
                     "params": [
                         {
@@ -78,9 +76,7 @@ async def main():
                             "default": p.default,
                             "required": p.required,
                             "choices": (
-                                [{"label": c.label, "value": c.value} for c in p.choices]
-                                if p.choices
-                                else None
+                                [{"label": c.label, "value": c.value} for c in p.choices] if p.choices else None
                             ),
                             "min": p.min,
                             "max": p.max,

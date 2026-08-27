@@ -9,6 +9,7 @@
 
 所有端点均需鉴权 (``CurrentUserDep``) + 租户隔离 (``TenantDep``).
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -19,6 +20,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 
 from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
+from hscredit_studio.core.logging import get_logger
 from hscredit_studio.models import AuditEvent, User
 from hscredit_studio.schemas.audit import (
     AuditEventItem,
@@ -26,7 +28,6 @@ from hscredit_studio.schemas.audit import (
     AuditStats,
 )
 from hscredit_studio.services import audit as audit_service
-from hscredit_studio.core.logging import get_logger
 
 router = APIRouter(tags=["审计"])
 _log = get_logger(__name__)
@@ -37,8 +38,8 @@ _log = get_logger(__name__)
     response_model=AuditEventListResponse,
     summary="审计事件分页查询",
     description=(
-"分页列出当前租户审计事件, 支持按动作 / 资源类型 / 用户 / 时间区间过滤. "
-"事件按 ``occurred_at DESC`` 排序 (最新优先)."
+        "分页列出当前租户审计事件, 支持按动作 / 资源类型 / 用户 / 时间区间过滤. "
+        "事件按 ``occurred_at DESC`` 排序 (最新优先)."
     ),
 )
 async def list_audit_events(
@@ -89,41 +90,52 @@ async def audit_stats(
 ) -> AuditStats:
     tenant_uuid = UUID(tenant_id)
 
-    total_events = await session.scalar(
-        select(func.count(AuditEvent.event_id)).where(AuditEvent.tenant_id == tenant_uuid)
-    ) or 0
+    total_events = (
+        await session.scalar(select(func.count(AuditEvent.event_id)).where(AuditEvent.tenant_id == tenant_uuid)) or 0
+    )
 
-    unique_users = await session.scalar(
-        select(func.count(func.distinct(AuditEvent.user_id))).where(
-            AuditEvent.tenant_id == tenant_uuid,
-            AuditEvent.user_id.is_not(None),
+    unique_users = (
+        await session.scalar(
+            select(func.count(func.distinct(AuditEvent.user_id))).where(
+                AuditEvent.tenant_id == tenant_uuid,
+                AuditEvent.user_id.is_not(None),
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    unique_actions = await session.scalar(
-        select(func.count(func.distinct(AuditEvent.action))).where(
-            AuditEvent.tenant_id == tenant_uuid
+    unique_actions = (
+        await session.scalar(
+            select(func.count(func.distinct(AuditEvent.action))).where(AuditEvent.tenant_id == tenant_uuid)
         )
-    ) or 0
+        or 0
+    )
 
     from datetime import timedelta
+
     now = datetime.utcnow()
     last_24h = now - timedelta(hours=24)
     last_7d = now - timedelta(days=7)
 
-    last_24h_events = await session.scalar(
-        select(func.count(AuditEvent.event_id)).where(
-            AuditEvent.tenant_id == tenant_uuid,
-            AuditEvent.occurred_at >= last_24h,
+    last_24h_events = (
+        await session.scalar(
+            select(func.count(AuditEvent.event_id)).where(
+                AuditEvent.tenant_id == tenant_uuid,
+                AuditEvent.occurred_at >= last_24h,
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    last_7d_events = await session.scalar(
-        select(func.count(AuditEvent.event_id)).where(
-            AuditEvent.tenant_id == tenant_uuid,
-            AuditEvent.occurred_at >= last_7d,
+    last_7d_events = (
+        await session.scalar(
+            select(func.count(AuditEvent.event_id)).where(
+                AuditEvent.tenant_id == tenant_uuid,
+                AuditEvent.occurred_at >= last_7d,
+            )
         )
-    ) or 0
+        or 0
+    )
 
     # 按动作聚合 (Top 10)
     by_action_rows = (
@@ -159,8 +171,7 @@ async def audit_stats(
         )
     ).all()
     by_user = [
-        {"user_id": str(uid) if uid else None, "email": email or "", "count": int(c)}
-        for uid, email, c in by_user_rows
+        {"user_id": str(uid) if uid else None, "email": email or "", "count": int(c)} for uid, email, c in by_user_rows
     ]
 
     return AuditStats(
@@ -190,9 +201,7 @@ async def export_audit_events(
     filename = f"audit_events_{tenant_uuid}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
 
     async def stream():
-        async for chunk in audit_service.iter_events_csv(
-            session, tenant_uuid, since=since, until=until
-        ):
+        async for chunk in audit_service.iter_events_csv(session, tenant_uuid, since=since, until=until):
             yield chunk
 
     return StreamingResponse(

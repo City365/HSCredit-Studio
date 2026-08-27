@@ -7,6 +7,7 @@
 路由前缀：``/api/v1/{tenant_slug}/node-definitions``（见 ``main.py``）.
 所有端点均需鉴权（``CurrentUserDep``）+ 租户隔离（``TenantDep``）.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -38,8 +39,8 @@ router = APIRouter(tags=["节点定义"])
 )
 async def list_node_definitions(
     session: SessionDep,
-    tenant_id: TenantDep,  # noqa: ARG001 — 触发租户校验
-    user: CurrentUserDep,  # noqa: ARG001 — 仅用于鉴权
+    tenant_id: TenantDep,
+    user: CurrentUserDep,
     category: str | None = Query(
         default=None,
         description="节点分类过滤（数据接入 / EDA / 特征工程 / 特征筛选 / 模型训练 / 评分卡与规则 / 报告与部署）",

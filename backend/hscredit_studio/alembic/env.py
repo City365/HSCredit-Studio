@@ -25,8 +25,7 @@ from hscredit_studio.core.config import settings
 from hscredit_studio.core.database import Base
 
 # 注册所有 ORM model；不可移除，否则 autogenerate 将看不到任何表
-from hscredit_studio.models import *  # noqa: E402, F401, F403
-
+from hscredit_studio.models import *  # noqa: F403
 
 config = context.config
 

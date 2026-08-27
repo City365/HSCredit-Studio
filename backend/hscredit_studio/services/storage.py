@@ -12,9 +12,9 @@
 每次操作通过 ``session.create_client`` 创建短生命周期 client,
 复用的是 ``AioSession`` 的 HTTP 连接池。
 """
+
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, BinaryIO
 from uuid import UUID
@@ -177,6 +177,7 @@ async def object_exists(tenant_id: UUID, key: str) -> bool:
 
     通过 ``head_object`` 实现(比 ``get_object`` 更轻量,不下载 body)。
     """
+    bucket = get_tenant_bucket(tenant_id)
     if _is_local_provider():
         return _local_path(bucket, key).exists()
     from botocore.exceptions import ClientError  # aiobotocore 依赖 botocore
@@ -238,12 +239,12 @@ async def close_storage_client() -> None:
 
 
 __all__ = [
+    "close_storage_client",
+    "download_bytes",
     "get_storage_client",
     "get_tenant_bucket",
-    "upload_bytes",
-    "upload_fileobj",
-    "download_bytes",
     "object_exists",
     "presigned_download_url",
-    "close_storage_client",
+    "upload_bytes",
+    "upload_fileobj",
 ]

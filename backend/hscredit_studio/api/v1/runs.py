@@ -12,26 +12,25 @@
 - Run 状态机：``pending → running → (success/cancelled/failed)``；
   ``cached`` 为缓存命中后的特殊终态。
 """
+
 from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 
 from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
-from hscredit_studio.core.exceptions import StateError
 from hscredit_studio.schemas.common import PaginatedResponse
 from hscredit_studio.schemas.run import (
+    ArtifactListResponse,
     NodeExecutionListItem,
     NodeExecutionResponse,
     NodeRetryResponse,
     RunCancelResponse,
     RunListItem,
     RunResponse,
-    RunSubmitRequest,
 )
 from hscredit_studio.services import run as run_service
-from hscredit_studio.schemas.run import ArtifactListResponse
 
 router = APIRouter(tags=["运行"])
 
@@ -43,10 +42,7 @@ router = APIRouter(tags=["运行"])
     "",
     response_model=PaginatedResponse[RunListItem],
     summary="Run 列表",
-    description=(
-        "分页列出当前租户的 Run，支持 ``workflow_id`` / ``status`` 过滤，"
-        "按 submitted_at desc 排序"
-    ),
+    description=("分页列出当前租户的 Run，支持 ``workflow_id`` / ``status`` 过滤，" "按 submitted_at desc 排序"),
 )
 async def list_runs(
     session: SessionDep,
@@ -121,9 +117,7 @@ async def get_node_execution(
     session: SessionDep,
     tenant_id: TenantDep,
 ) -> NodeExecutionResponse:
-    return await run_service.get_node_execution(
-        session, UUID(tenant_id), run_id, node_exec_id
-    )
+    return await run_service.get_node_execution(session, UUID(tenant_id), run_id, node_exec_id)
 
 
 # ===== 产物 =====
@@ -147,7 +141,9 @@ async def list_artifacts(
         description="是否生成预签名下载 URL（默认 true）",
     ),
     expires_in: int = Query(
-        default=3600, ge=60, le=86400,
+        default=3600,
+        ge=60,
+        le=86400,
         description="预签名 URL 有效期（秒）",
     ),
 ) -> ArtifactListResponse:
@@ -210,7 +206,11 @@ async def retry_node_execution(
 ) -> NodeRetryResponse:
     user_id = UUID(user["sub"])
     return await run_service.retry_node_execution(
-        session, UUID(tenant_id), user_id, run_id, node_exec_id,
+        session,
+        UUID(tenant_id),
+        user_id,
+        run_id,
+        node_exec_id,
     )
 
 

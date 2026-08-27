@@ -2,10 +2,9 @@
 
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-import orjson
 from pythonjsonlogger import jsonlogger
 
 from hscredit_studio.core.config import settings
@@ -17,7 +16,7 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
     def add_fields(self, log_record: dict[str, Any], record: logging.LogRecord, message_dict: dict[str, Any]) -> None:
         super().add_fields(log_record, record, message_dict)
         # 必备字段（用 datetime 而非 time.strftime 以支持微秒）
-        log_record["timestamp"] = datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat()
+        log_record["timestamp"] = datetime.fromtimestamp(record.created, tz=UTC).isoformat()
         log_record["level"] = record.levelname
         log_record["logger"] = record.name
         log_record["service"] = settings.otel_service_name
@@ -60,12 +59,32 @@ class KwargLogger:
     """
 
     # logging.LogRecord 内置字段（不可作为 extra key 覆盖）
-    _RESERVED_KEYS = frozenset({
-        "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
-        "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
-        "created", "msecs", "relativeCreated", "thread", "threadName",
-        "processName", "process", "message", "asctime",
-    })
+    _RESERVED_KEYS = frozenset(
+        {
+            "name",
+            "msg",
+            "args",
+            "levelname",
+            "levelno",
+            "pathname",
+            "filename",
+            "module",
+            "exc_info",
+            "exc_text",
+            "stack_info",
+            "lineno",
+            "funcName",
+            "created",
+            "msecs",
+            "relativeCreated",
+            "thread",
+            "threadName",
+            "processName",
+            "process",
+            "message",
+            "asctime",
+        }
+    )
 
     def __init__(self, name: str) -> None:
         self._logger = logging.getLogger(name)

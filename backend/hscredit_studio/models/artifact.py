@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     BigInteger,
@@ -20,7 +19,8 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from hscredit_studio.core.database import Base
@@ -29,7 +29,6 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
-
 
 NODE_ARTIFACT_TYPE_VALUES = ("parquet", "excel", "pmml", "json", "png", "model", "binner", "scorecard")
 """NodeArtifact.artifact_type 枚举值.

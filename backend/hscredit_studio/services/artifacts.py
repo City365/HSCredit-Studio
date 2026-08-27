@@ -9,6 +9,7 @@ Phase 1 简化策略（见设计文档 09 第 9.3.4 节 + 14 第 14.6 节）：
 
 每个 output 写入 :class:`NodeArtifact` ORM 一行（含 ``sha256`` 用于去重与缓存命中判断）。
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -203,9 +204,7 @@ async def save_node_output(
         sha256=sha,
         metadata_=metadata or {},
     )
-    insert_stmt = insert_stmt.on_conflict_do_nothing(
-        index_elements=["node_exec_id", "artifact_type", "sha256"]
-    )
+    insert_stmt = insert_stmt.on_conflict_do_nothing(index_elements=["node_exec_id", "artifact_type", "sha256"])
     await session.execute(insert_stmt)
 
     _log.debug(
@@ -240,7 +239,7 @@ async def load_node_inputs(
     for qualified_key, storage_key in artifact_paths.items():
         # 兼容 executor 写入的 "{upstream_node_id}.{output_name}" 命名空间形式
         if "." in qualified_key and _input_ne is not None:
-            upstream_node_id, _, output_name = qualified_key.partition(".")
+            _upstream_node_id, _, output_name = qualified_key.partition(".")
         else:
             output_name = qualified_key
         # 从 S3 key 解析 artifact_type：取 .pkl/.parquet/.json 后缀
@@ -270,11 +269,11 @@ async def load_node_inputs(
 
 
 __all__ = [
-    "infer_artifact_type",
-    "content_type_for",
-    "serialize_for_upload",
-    "deserialize_from_storage",
     "build_storage_key",
-    "save_node_output",
+    "content_type_for",
+    "deserialize_from_storage",
+    "infer_artifact_type",
     "load_node_inputs",
+    "save_node_output",
+    "serialize_for_upload",
 ]

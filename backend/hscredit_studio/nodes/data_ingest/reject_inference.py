@@ -12,6 +12,7 @@
 - ``fuzzy_augmentation``: 将拒绝客户按评分相似度匹配到已放款客户,
   按相似度加权采样扩充训练集
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -20,7 +21,6 @@ import numpy as np
 import pandas as pd
 
 from hscredit_studio.core.exceptions import (
-    DependencyError,
     FeatureNotFoundError,
     ValidationError,
 )
@@ -48,7 +48,13 @@ class RejectInferenceNode(BaseNode):
         inputs=[
             PortSchema(name="df", type="DataFrame", required=True, description="已放款客户数据"),
             PortSchema(name="rejected_df", type="DataFrame", required=True, description="已拒绝客户数据"),
-            PortSchema(name="score", type="DataFrame", required=False, aliases=["df_score"], description="(可选) 已放款客户的模型评分"),
+            PortSchema(
+                name="score",
+                type="DataFrame",
+                required=False,
+                aliases=["df_score"],
+                description="(可选) 已放款客户的模型评分",
+            ),
         ],
         outputs=[
             PortSchema(name="inferred_df", type="DataFrame", description="扩充后的训练集 (含推断拒绝客户)"),
@@ -166,19 +172,21 @@ class RejectInferenceNode(BaseNode):
         # 已放款客户按分数分箱
         df_binned = df.copy()
         df_binned["_bin"] = pd.qcut(df_binned[score_col], q=n_bins, labels=False, duplicates="drop")
-        bin_stats = df_binned.groupby("_bin").agg(
-            bad_rate=(target, "mean"),
-            n=("_bin", "size"),
-        ).reset_index()
+        bin_stats = (
+            df_binned.groupby("_bin")
+            .agg(
+                bad_rate=(target, "mean"),
+                n=("_bin", "size"),
+            )
+            .reset_index()
+        )
 
         # 拒绝客户按同一分箱边界推断坏率
         rej_binned = rejected_df.copy()
         rej_binned["_bin"] = pd.qcut(rej_binned[score_col], q=n_bins, labels=False, duplicates="drop")
         # 映射坏率
-        bin_badrate = dict(zip(bin_stats["_bin"], bin_stats["bad_rate"]))
-        rej_binned["_inferred_target"] = rej_binned["_bin"].map(
-            lambda b: bin_badrate.get(int(b), df[target].mean())
-        )
+        bin_badrate = dict(zip(bin_stats["_bin"], bin_stats["bad_rate"], strict=False))
+        rej_binned["_inferred_target"] = rej_binned["_bin"].map(lambda b: bin_badrate.get(int(b), df[target].mean()))
         # 二值化 (按阈值)
         rej_binned[target] = (rej_binned["_inferred_target"] >= threshold).astype(int)
 
@@ -209,10 +217,9 @@ class RejectInferenceNode(BaseNode):
         """模糊增强: 拒绝客户按特征相似度匹配到已放款客户, 采样扩充."""
         # 选数值特征用于相似度
         numeric_cols = [
-            c for c in df.columns
-            if c != target
-            and pd.api.types.is_numeric_dtype(df[c])
-            and pd.api.types.is_numeric_dtype(rejected_df[c])
+            c
+            for c in df.columns
+            if c != target and pd.api.types.is_numeric_dtype(df[c]) and pd.api.types.is_numeric_dtype(rejected_df[c])
         ]
         if not numeric_cols:
             raise ValidationError(
@@ -236,16 +243,10 @@ class RejectInferenceNode(BaseNode):
                 rejected_binned[col] = 0
 
         # 按分箱键分组匹配
-        accepted_binned["_fingerprint"] = accepted_binned[numeric_cols].apply(
-            lambda r: tuple(r), axis=1
-        )
-        rejected_binned["_fingerprint"] = rejected_binned[numeric_cols].apply(
-            lambda r: tuple(r), axis=1
-        )
+        accepted_binned["_fingerprint"] = accepted_binned[numeric_cols].apply(lambda r: tuple(r), axis=1)
+        rejected_binned["_fingerprint"] = rejected_binned[numeric_cols].apply(lambda r: tuple(r), axis=1)
 
-        accepted_groups = {
-            fp: group[target].values for fp, group in accepted_binned.groupby("_fingerprint")
-        }
+        accepted_groups = {fp: group[target].values for fp, group in accepted_binned.groupby("_fingerprint")}
         global_bad_rate = float(df[target].mean())
 
         # 给每个拒绝客户分配推断标签 (从匹配组随机采样)

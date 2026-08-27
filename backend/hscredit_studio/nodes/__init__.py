@@ -20,27 +20,27 @@
     instance = cls()
     outputs = instance.run({}, {})
 """
+
 from __future__ import annotations
 
 from hscredit_studio.nodes.base import BaseNode
-from hscredit_studio.nodes.registry import NodeRegistry, register_node
 
 # 触发各分类子模块的导入,执行其中的 @register_node 装饰器。
 from hscredit_studio.nodes.data_ingest import (
     csv_ingest,
     excel_ingest,
-    train_oot_split,
     field_type_infer,
     reject_inference,
+    train_oot_split,
 )
 from hscredit_studio.nodes.eda import (
-    missing_rate,
     iv_analysis,
+    missing_rate,
 )
 from hscredit_studio.nodes.feature_engineering import (
     num_expr_derive,
-    optimal_binning_chi,
     optimal_binning_cart,
+    optimal_binning_chi,
     woe_encoder,
 )
 from hscredit_studio.nodes.feature_selection import (
@@ -52,44 +52,45 @@ from hscredit_studio.nodes.model_training import (
     shap_explanation,
     xgboost,
 )
-from hscredit_studio.nodes.scorecard_rule import (
-    score_card,
-    round_score_card,
-)
+from hscredit_studio.nodes.registry import NodeRegistry, register_node
 from hscredit_studio.nodes.report_deploy import (
-    model_report,
     excel_export,
+    model_report,
+)
+from hscredit_studio.nodes.scorecard_rule import (
+    round_score_card,
+    score_card,
 )
 
 __all__ = [
     "BaseNode",
     "NodeRegistry",
-    "register_node",
     # 数据接入
     "csv_ingest",
+    "excel_export",
     "excel_ingest",
-    "train_oot_split",
     "field_type_infer",
-    "reject_inference",
-    # EDA
-    "missing_rate",
     "iv_analysis",
-    # 特征工程
-    "num_expr_derive",
-    "optimal_binning_chi",
-    "optimal_binning_cart",
-    "woe_encoder",
     # 特征筛选
     "iv_selector",
-    "vif_selector",
     # 模型训练
     "logistic_regression",
-    "shap_explanation",
-    "xgboost",
-    # 评分卡与规则
-    "score_card",
-    "round_score_card",
+    # EDA
+    "missing_rate",
     # 报告与部署
     "model_report",
-    "excel_export",
+    # 特征工程
+    "num_expr_derive",
+    "optimal_binning_cart",
+    "optimal_binning_chi",
+    "register_node",
+    "reject_inference",
+    "round_score_card",
+    # 评分卡与规则
+    "score_card",
+    "shap_explanation",
+    "train_oot_split",
+    "vif_selector",
+    "woe_encoder",
+    "xgboost",
 ]

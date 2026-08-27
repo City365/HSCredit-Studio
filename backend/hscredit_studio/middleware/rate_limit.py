@@ -8,10 +8,11 @@
 
 Phase 2 批次 13 — 防止租户恶意刷接口,保护后端 + 数据库.
 """
+
 from __future__ import annotations
 
 import time
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -131,6 +132,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             # 3. 记录当前请求 (member 必须唯一, 用时间戳+随机数避免冲突)
             import secrets
+
             member = f"{now}:{secrets.token_hex(4)}"
             await client.zadd(key, {member: now})
             # 4. 设置 key 过期 (比窗口稍长避免内存泄漏)

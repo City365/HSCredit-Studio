@@ -8,6 +8,7 @@
 4. 否则尝试 ``pd.to_datetime`` 解析;解析成功率 >= ``date_min_parse_ratio`` → ``datetime``
 5. 其余 → ``categorical``
 """
+
 from __future__ import annotations
 
 from typing import Any

@@ -22,20 +22,21 @@
   Phase 2 接入调度器后迁移到独立列。
 - 入队（Celery / 任务队列）逻辑在 Phase 1.5（批次 5）实现。
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from hscredit_studio.core.exceptions import (
     FeatureNotFoundError,
     StateError,
 )
+from hscredit_studio.executor.coordinator import RunCoordinator
 from hscredit_studio.models import (
     NodeArtifact,
     NodeExecution,
@@ -55,10 +56,8 @@ from hscredit_studio.schemas.run import (
     RunResponse,
     RunSubmitRequest,
 )
-from hscredit_studio.services.storage import presigned_download_url
 from hscredit_studio.schemas.workflow import WorkflowDefinition
-from hscredit_studio.executor.coordinator import RunCoordinator
-
+from hscredit_studio.services.storage import presigned_download_url
 
 # 可取消的 Run 状态（包含 ``retrying`` 用于支持重试中取消）
 _CANCELLABLE_RUN_STATES = ("pending", "queued", "running", "retrying")
@@ -107,9 +106,7 @@ async def submit_run(
     if req.workflow_version_id is not None:
         version = await session.get(WorkflowVersion, req.workflow_version_id)
         if version is None or version.workflow_id != workflow_id:
-            raise FeatureNotFoundError(
-                f"指定的版本 {req.workflow_version_id} 不存在或不属于该工作流"
-            )
+            raise FeatureNotFoundError(f"指定的版本 {req.workflow_version_id} 不存在或不属于该工作流")
     else:
         if wf.current_version_id is None:
             raise StateError("工作流没有可用版本，无法提交 Run")
@@ -119,8 +116,7 @@ async def submit_run(
 
     # run_number 自增（per-tenant 唯一，含已删除 run 以保持 gap-free 失败追溯）
     last_run = await session.scalar(
-        select(func.coalesce(func.max(Run.run_number), 0))
-        .where(Run.tenant_id == tenant_id)
+        select(func.coalesce(func.max(Run.run_number), 0)).where(Run.tenant_id == tenant_id)
     )
     next_run_number = (last_run or 0) + 1
 
@@ -167,6 +163,7 @@ async def submit_run(
 
     # 审计: Run 提交
     from hscredit_studio.services import audit as audit_service
+
     await audit_service.record_event(
         session,
         tenant_id=tenant_id,
@@ -200,11 +197,7 @@ async def list_runs(
 ) -> tuple[list[RunListItem], int]:
     """分页列出 Run（按 tenant_id 隔离，可选 workflow_id / status 过滤）."""
     base = select(Run).where(Run.tenant_id == tenant_id)
-    count_q = (
-        select(func.count())
-        .select_from(Run)
-        .where(Run.tenant_id == tenant_id)
-    )
+    count_q = select(func.count()).select_from(Run).where(Run.tenant_id == tenant_id)
 
     if workflow_id is not None:
         base = base.where(Run.workflow_id == workflow_id)
@@ -213,11 +206,7 @@ async def list_runs(
         base = base.where(Run.status == status)
         count_q = count_q.where(Run.status == status)
 
-    base = (
-        base.order_by(Run.submitted_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    base = base.order_by(Run.submitted_at.desc()).offset((page - 1) * page_size).limit(page_size)
 
     runs = (await session.scalars(base)).all()
     total = (await session.scalar(count_q)) or 0
@@ -240,12 +229,7 @@ async def get_run(
         raise FeatureNotFoundError(f"Run {run_id} 不存在")
 
     ne_count = (
-        await session.scalar(
-            select(func.count())
-            .select_from(NodeExecution)
-            .where(NodeExecution.run_id == run_id)
-        )
-        or 0
+        await session.scalar(select(func.count()).select_from(NodeExecution).where(NodeExecution.run_id == run_id)) or 0
     )
 
     duration_seconds = float(r.duration_sec) if r.duration_sec is not None else None
@@ -342,9 +326,7 @@ async def list_node_executions(
 
     nes = (
         await session.scalars(
-            select(NodeExecution)
-            .where(NodeExecution.run_id == run_id)
-            .order_by(NodeExecution.created_at)
+            select(NodeExecution).where(NodeExecution.run_id == run_id).order_by(NodeExecution.created_at)
         )
     ).all()
 
@@ -368,9 +350,7 @@ async def get_node_execution(
 
     logs_count = (
         await session.scalar(
-            select(func.count())
-            .select_from(NodeExecutionLog)
-            .where(NodeExecutionLog.node_exec_id == node_exec_id)
+            select(func.count()).select_from(NodeExecutionLog).where(NodeExecutionLog.node_exec_id == node_exec_id)
         )
         or 0
     )
@@ -451,19 +431,19 @@ def _artifact_paths_to_list(artifact_paths: Any) -> list[str]:
     if isinstance(artifact_paths, list):
         return [str(p) for p in artifact_paths]
     if isinstance(artifact_paths, dict):
-        return [str(k) for k in artifact_paths.keys()]
+        return [str(k) for k in artifact_paths]
     return [str(artifact_paths)]
 
 
 __all__ = [
-    "submit_run",
-    "list_runs",
-    "get_run",
     "cancel_run",
-    "list_node_executions",
     "get_node_execution",
+    "get_run",
+    "list_node_executions",
     "list_run_artifacts",
+    "list_runs",
     "retry_node_execution",
+    "submit_run",
 ]
 
 
@@ -505,9 +485,7 @@ async def list_run_artifacts(
     # 1) 拉所有 NodeExecution，构造 node_exec_id -> NodeExecution 索引
     nes = (
         await session.scalars(
-            select(NodeExecution)
-            .where(NodeExecution.run_id == run_id)
-            .order_by(NodeExecution.created_at)
+            select(NodeExecution).where(NodeExecution.run_id == run_id).order_by(NodeExecution.created_at)
         )
     ).all()
     ne_by_id: dict[UUID, NodeExecution] = {ne.node_exec_id: ne for ne in nes}
@@ -551,7 +529,9 @@ async def list_run_artifacts(
         if include_download_url:
             try:
                 dl_url = await presigned_download_url(
-                    tenant_id=tenant_id, key=art.storage_path, expires_in=expires_in,
+                    tenant_id=tenant_id,
+                    key=art.storage_path,
+                    expires_in=expires_in,
                 )
             except Exception:
                 # 签名失败不影响主流程；前端看到 download_url=null 时显示「不可下载」
@@ -641,6 +621,7 @@ async def retry_node_execution(
 
     # 6. 审计: 节点重试
     from hscredit_studio.services import audit as audit_service
+
     await audit_service.record_event(
         session,
         tenant_id=tenant_id,

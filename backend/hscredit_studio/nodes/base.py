@@ -8,6 +8,7 @@
 - 业务错误统一抛 :class:`HSCreditWorkflowError` (与本项目异常体系对齐);
   抛其他异常会被 executor 视为系统错误并按 ``contract.retryable`` 决定是否重试。
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

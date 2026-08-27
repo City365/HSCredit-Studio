@@ -18,9 +18,10 @@
   层手动 +1（DB 唯一约束 ``(workflow_id, version_number)`` 兜底）。
 - 导入复用 ``create_workflow`` 逻辑（保留原始 name + definition）。
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -39,7 +40,6 @@ from hscredit_studio.schemas.workflow import (
     WorkflowVersionCreate,
     WorkflowVersionResponse,
 )
-
 
 # ===== 列表 =====
 
@@ -60,9 +60,13 @@ async def list_workflows(
         Workflow.tenant_id == tenant_id,
         Workflow.deleted_at.is_(None),
     )
-    count_q = select(func.count()).select_from(Workflow).where(
-        Workflow.tenant_id == tenant_id,
-        Workflow.deleted_at.is_(None),
+    count_q = (
+        select(func.count())
+        .select_from(Workflow)
+        .where(
+            Workflow.tenant_id == tenant_id,
+            Workflow.deleted_at.is_(None),
+        )
     )
 
     # 搜索过滤：name / description 模糊匹配
@@ -96,10 +100,7 @@ async def list_workflows(
     items: list[WorkflowListItem] = []
     for wf in workflows:
         last_run = await session.scalar(
-            select(Run)
-            .where(Run.workflow_id == wf.workflow_id)
-            .order_by(Run.submitted_at.desc())
-            .limit(1)
+            select(Run).where(Run.workflow_id == wf.workflow_id).order_by(Run.submitted_at.desc()).limit(1)
         )
 
         current_version_number: int | None = None
@@ -186,18 +187,15 @@ async def get_workflow(
 
     versions_count = (
         await session.scalar(
-            select(func.count()).select_from(WorkflowVersion).where(
+            select(func.count())
+            .select_from(WorkflowVersion)
+            .where(
                 WorkflowVersion.workflow_id == workflow_id,
             )
         )
         or 0
     )
-    runs_count = (
-        await session.scalar(
-            select(func.count()).select_from(Run).where(Run.workflow_id == workflow_id)
-        )
-        or 0
-    )
+    runs_count = await session.scalar(select(func.count()).select_from(Run).where(Run.workflow_id == workflow_id)) or 0
 
     current_version_number: int | None = None
     definition_dict: dict[str, Any] | None = None
@@ -209,10 +207,7 @@ async def get_workflow(
 
     # 最近一次 run（用于列表头部的"上次执行"信息）
     last_run = await session.scalar(
-        select(Run)
-        .where(Run.workflow_id == workflow_id)
-        .order_by(Run.submitted_at.desc())
-        .limit(1)
+        select(Run).where(Run.workflow_id == workflow_id).order_by(Run.submitted_at.desc()).limit(1)
     )
 
     return WorkflowResponse(
@@ -348,9 +343,7 @@ async def list_versions(
         )
     ).all()
 
-    return [
-        _to_version_response(v) for v in versions
-    ]
+    return [_to_version_response(v) for v in versions]
 
 
 async def create_version(
@@ -546,14 +539,14 @@ def _has_cycle(nodes: list, edges: list) -> bool:
 
 
 __all__ = [
-    "list_workflows",
-    "create_workflow",
-    "get_workflow",
-    "update_workflow",
-    "delete_workflow",
-    "list_versions",
     "create_version",
-    "get_version",
+    "create_workflow",
+    "delete_workflow",
     "export_workflow",
+    "get_version",
+    "get_workflow",
     "import_workflow",
+    "list_versions",
+    "list_workflows",
+    "update_workflow",
 ]

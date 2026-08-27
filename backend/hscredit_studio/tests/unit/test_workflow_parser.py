@@ -1,13 +1,20 @@
 """单元测试 — DAG 解析器."""
+
 import pytest
+
+from hscredit_studio.core.exceptions import WorkflowParseError
 from hscredit_studio.executor.parser import (
-    parse_workflow_definition, get_initial_nodes, get_downstream_ready_nodes,
+    get_downstream_ready_nodes,
+    get_initial_nodes,
+    parse_workflow_definition,
     topological_sort,
 )
 from hscredit_studio.schemas.workflow import (
-    WorkflowDefinition, NodeDef, NodePosition, EdgeDef,
+    EdgeDef,
+    NodeDef,
+    NodePosition,
+    WorkflowDefinition,
 )
-from hscredit_studio.core.exceptions import WorkflowParseError
 
 
 def _make_def(nodes, edges):
@@ -19,8 +26,10 @@ def _make_def(nodes, edges):
 
 def test_simple_linear_workflow():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "field_type_infer", "position": {"x": 100, "y": 0}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "field_type_infer", "position": {"x": 100, "y": 0}},
+        ],
         [{"source": "a", "target": "b"}],
     )
     plans = parse_workflow_definition(defn)
@@ -33,12 +42,18 @@ def test_simple_linear_workflow():
 
 def test_diamond_workflow():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
-         {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}},
-         {"id": "d", "type": "woe_encoder", "position": {"x": 200, "y": 50}}],
-        [{"source": "a", "target": "b"}, {"source": "a", "target": "c"},
-         {"source": "b", "target": "d"}, {"source": "c", "target": "d"}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+            {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}},
+            {"id": "d", "type": "woe_encoder", "position": {"x": 200, "y": 50}},
+        ],
+        [
+            {"source": "a", "target": "b"},
+            {"source": "a", "target": "c"},
+            {"source": "b", "target": "d"},
+            {"source": "c", "target": "d"},
+        ],
     )
     plans = parse_workflow_definition(defn)
     assert plans["a"].is_initial is True
@@ -50,8 +65,10 @@ def test_diamond_workflow():
 
 def test_cycle_detection():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+        ],
         [{"source": "a", "target": "b"}, {"source": "b", "target": "a"}],
     )
     with pytest.raises(WorkflowParseError, match="循环"):
@@ -60,8 +77,10 @@ def test_cycle_detection():
 
 def test_duplicate_node_id():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "a", "type": "missing_rate", "position": {"x": 100, "y": 0}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "a", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+        ],
         [],
     )
     with pytest.raises(WorkflowParseError, match="重复"):
@@ -88,9 +107,11 @@ def test_edge_from_nonexistent_node():
 
 def test_topological_sort():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
-         {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+            {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}},
+        ],
         [{"source": "a", "target": "b"}, {"source": "a", "target": "c"}],
     )
     plans = parse_workflow_definition(defn)
@@ -101,12 +122,18 @@ def test_topological_sort():
 
 def test_get_downstream_ready_nodes():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
-         {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}},
-         {"id": "d", "type": "woe_encoder", "position": {"x": 200, "y": 50}}],
-        [{"source": "a", "target": "b"}, {"source": "a", "target": "c"},
-         {"source": "b", "target": "d"}, {"source": "c", "target": "d"}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+            {"id": "c", "type": "iv_analysis", "position": {"x": 100, "y": 100}},
+            {"id": "d", "type": "woe_encoder", "position": {"x": 200, "y": 50}},
+        ],
+        [
+            {"source": "a", "target": "b"},
+            {"source": "a", "target": "c"},
+            {"source": "b", "target": "d"},
+            {"source": "c", "target": "d"},
+        ],
     )
     plans = parse_workflow_definition(defn)
     ready = get_downstream_ready_nodes(plans, completed={"a", "b", "c"})
@@ -115,8 +142,10 @@ def test_get_downstream_ready_nodes():
 
 def test_get_downstream_ready_empty_when_none_completed():
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+        ],
         [{"source": "a", "target": "b"}],
     )
     plans = parse_workflow_definition(defn)
@@ -128,9 +157,11 @@ def test_get_downstream_ready_empty_when_none_completed():
 def test_topological_sort_linear_chain():
     """线性链 a->b->c 的拓扑排序唯一."""
     defn = _make_def(
-        [{"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
-         {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
-         {"id": "c", "type": "iv_analysis", "position": {"x": 200, "y": 0}}],
+        [
+            {"id": "a", "type": "csv_ingest", "position": {"x": 0, "y": 0}},
+            {"id": "b", "type": "missing_rate", "position": {"x": 100, "y": 0}},
+            {"id": "c", "type": "iv_analysis", "position": {"x": 200, "y": 0}},
+        ],
         [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}],
     )
     plans = parse_workflow_definition(defn)

@@ -18,13 +18,13 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import INET, JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from hscredit_studio.core.database import Base
 from hscredit_studio.models.base import (
     ModelSerializerMixin,
-    TenantMixin,
 )
 
 

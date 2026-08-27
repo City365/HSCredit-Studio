@@ -23,7 +23,8 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hscredit_studio.core.database import Base
@@ -33,7 +34,6 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
-
 
 VISIBILITY_VALUES = ("private", "tenant", "public")
 """CustomNode.visibility 枚举值."""
@@ -83,9 +83,7 @@ class NodeDefinition(Base, TimestampMixin, ModelSerializerMixin):
         comment="是否在 UI 中启用",
     )
 
-    __table_args__ = (
-        Index("ix_node_definitions_category_enabled", "category", "enabled"),
-    )
+    __table_args__ = (Index("ix_node_definitions_category_enabled", "category", "enabled"),)
 
 
 class CustomNode(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializerMixin):
@@ -147,7 +145,7 @@ class CustomNode(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerial
     )
 
     # 关系
-    versions: Mapped[list["CustomNodeVersion"]] = relationship(
+    versions: Mapped[list[CustomNodeVersion]] = relationship(
         "CustomNodeVersion",
         back_populates="custom_node",
         cascade="all, delete-orphan",
@@ -200,7 +198,7 @@ class CustomNodeVersion(Base, TimestampMixin, ModelSerializerMixin):
     )
 
     # 关系
-    custom_node: Mapped["CustomNode"] = relationship(
+    custom_node: Mapped[CustomNode] = relationship(
         "CustomNode",
         back_populates="versions",
     )
@@ -253,16 +251,14 @@ class CustomNodeTestRun(Base, TimestampMixin, TenantMixin, ModelSerializerMixin)
         nullable=True,
     )
 
-    __table_args__ = (
-        Index("ix_custom_node_test_runs_version", "version_id"),
-    )
+    __table_args__ = (Index("ix_custom_node_test_runs_version", "version_id"),)
 
 
 __all__ = [
-    "VISIBILITY_VALUES",
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
-    "NodeDefinition",
+    "VISIBILITY_VALUES",
     "CustomNode",
-    "CustomNodeVersion",
     "CustomNodeTestRun",
+    "CustomNodeVersion",
+    "NodeDefinition",
 ]

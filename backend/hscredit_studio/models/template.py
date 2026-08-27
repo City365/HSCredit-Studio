@@ -13,7 +13,6 @@ import uuid
 
 from sqlalchemy import (
     CheckConstraint,
-    Float,
     ForeignKey,
     Index,
     Integer,
@@ -23,7 +22,8 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hscredit_studio.core.database import Base
@@ -33,7 +33,6 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
-
 
 # 09 中包含 ``private/team/tenant/official`` 四档；本项目支持前三档 + ``public``
 # 平台上架的官方模板枚举（OFFICIAL_TENANT_VALUES 实际为 NULL 表示平台官方）。
@@ -107,13 +106,13 @@ class Template(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializ
     )
 
     # 关系
-    versions: Mapped[list["TemplateVersion"]] = relationship(
+    versions: Mapped[list[TemplateVersion]] = relationship(
         "TemplateVersion",
         back_populates="template",
         cascade="all, delete-orphan",
         order_by="TemplateVersion.version_number",
     )
-    ratings: Mapped[list["TemplateRating"]] = relationship(
+    ratings: Mapped[list[TemplateRating]] = relationship(
         "TemplateRating",
         back_populates="template",
         cascade="all, delete-orphan",
@@ -175,7 +174,7 @@ class TemplateVersion(Base, TimestampMixin, ModelSerializerMixin):
     change_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 关系
-    template: Mapped["Template"] = relationship("Template", back_populates="versions")
+    template: Mapped[Template] = relationship("Template", back_populates="versions")
 
     __table_args__ = (
         UniqueConstraint(
@@ -216,7 +215,7 @@ class TemplateRating(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 关系
-    template: Mapped["Template"] = relationship("Template", back_populates="ratings")
+    template: Mapped[Template] = relationship("Template", back_populates="ratings")
 
     __table_args__ = (
         # 同一用户对同一模板只能评分一次
@@ -236,6 +235,6 @@ class TemplateRating(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
 __all__ = [
     "TEMPLATE_VISIBILITY_VALUES",
     "Template",
-    "TemplateVersion",
     "TemplateRating",
+    "TemplateVersion",
 ]

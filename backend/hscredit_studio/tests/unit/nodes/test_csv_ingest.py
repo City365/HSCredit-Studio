@@ -1,8 +1,12 @@
 """CSV 接入节点 smoke test."""
-import pytest
-import tempfile
+
 import os
+import tempfile
+
 import pandas as pd
+import pytest
+
+from hscredit_studio.core.exceptions import ValidationError
 from hscredit_studio.nodes.data_ingest.csv_ingest import CSVIngestNode
 
 
@@ -34,13 +38,13 @@ def test_csv_ingest_basic(sample_csv):
 
 def test_csv_ingest_missing_path():
     node = CSVIngestNode()
-    with pytest.raises(Exception):  # ValidationError
+    with pytest.raises(ValidationError):
         node.run(inputs={}, params={"path": ""})
 
 
 def test_csv_ingest_nonexistent_file():
     node = CSVIngestNode()
-    with pytest.raises(Exception):
+    with pytest.raises((ValidationError, FileNotFoundError)):
         node.run(inputs={}, params={"path": "/tmp/this_file_does_not_exist_12345.csv"})
 
 

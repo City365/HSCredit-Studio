@@ -22,11 +22,11 @@ async def get_current_user(
     token = authorization.removeprefix("Bearer ")
     try:
         payload = decode_token(token)
-    except ValueError:
+    except ValueError as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "E_AUTH_REQUIRED", "message": "无效的访问令牌"},
-        )
+        ) from err
 
     return payload
 

@@ -15,10 +15,9 @@ Phase 1 使用 ``pickle`` 序列化(可序列化任意 Python 对象);
 Phase 2 计划迁移到 ``orjson`` 以提高安全性(参见
 :file:`docs/design/06-non-functional.md` 第 6.7.2 节的 pickle 风险)。
 """
+
 from __future__ import annotations
 
-import hashlib
-import json
 import pickle
 from typing import Any
 
@@ -127,7 +126,7 @@ def deserialize_value(data: bytes) -> Any:
     .. warning::
         仅反序列化本系统自身写入的数据;不接受用户输入的字节流。
     """
-    return pickle.loads(data)  # noqa: S301 — trusted internal cache
+    return pickle.loads(data)
 
 
 # Phase 2 改进:使用 orjson 替代 pickle 以提高安全性。
@@ -151,11 +150,11 @@ def deserialize_json(data: bytes) -> Any:
 
 
 __all__ = [
-    "get_cache_client",
-    "close_cache_client",
     "CacheKeyGenerator",
-    "serialize_value",
-    "deserialize_value",
-    "serialize_json",
+    "close_cache_client",
     "deserialize_json",
+    "deserialize_value",
+    "get_cache_client",
+    "serialize_json",
+    "serialize_value",
 ]

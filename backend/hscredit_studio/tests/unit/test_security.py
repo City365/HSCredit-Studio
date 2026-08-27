@@ -1,11 +1,16 @@
 """单元测试 — JWT + bcrypt."""
-import pytest
+
 from datetime import timedelta
+
+import pytest
+
 from hscredit_studio.core.security import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token, decode_token,
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    verify_password,
 )
-from hscredit_studio.core.exceptions import AuthenticationError
 
 
 def test_hash_and_verify_password():
@@ -33,6 +38,7 @@ def test_create_refresh_token():
 
 def test_decode_token_with_invalid_signature():
     from hscredit_studio.core.security import decode_token
+
     with pytest.raises(ValueError):
         decode_token("invalid.token.here")
 
@@ -50,6 +56,7 @@ def test_token_with_extra_claims():
 def test_token_expiration():
     token = create_access_token(subject="user-123", expires_delta=timedelta(seconds=-1))
     from hscredit_studio.core.security import decode_token
+
     with pytest.raises(ValueError):
         decode_token(token)
 

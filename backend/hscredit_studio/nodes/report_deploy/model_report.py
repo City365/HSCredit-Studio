@@ -12,6 +12,7 @@
 - ``test_df`` 可选, 提供则命名为 ``测试集``。
 - 训练/测试特征使用 ``features`` 列表; ``target`` 为目标列。
 """
+
 from __future__ import annotations
 
 import os
@@ -122,7 +123,7 @@ class ModelReportNode(BaseNode):
             )
 
         # 校验列存在
-        for col in features + [target]:
+        for col in [*features, target]:
             if col not in train_df.columns:
                 raise FeatureNotFoundError(
                     f"训练集缺少必需列: {col}",
@@ -130,7 +131,7 @@ class ModelReportNode(BaseNode):
                 )
         if test_df is not None:
             target_test = params.get("target_test") or target
-            for col in features + [target_test]:
+            for col in [*features, target_test]:
                 if col not in test_df.columns:
                     raise FeatureNotFoundError(
                         f"测试集缺少必需列: {col}",
@@ -145,12 +146,13 @@ class ModelReportNode(BaseNode):
             for col in df.select_dtypes(include="datetimetz").columns:
                 df[col] = df[col].dt.tz_localize(None)
             return df
+
         train_df = _strip_tz(train_df.copy())
         if test_df is not None:
             test_df = _strip_tz(test_df.copy())
-        datasets: dict[str, pd.DataFrame] = {"训练集": train_df[features + [target]].copy()}
+        datasets: dict[str, pd.DataFrame] = {"训练集": train_df[[*features, target]].copy()}
         if test_df is not None:
-            datasets["测试集"] = test_df[features + [target_test]].copy()
+            datasets["测试集"] = test_df[[*features, target_test]].copy()
 
         try:
             # ModelReport 期望 model 是已训练分类器（sklearn 风格）。

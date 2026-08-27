@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 from typing import Any, Literal
-from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -194,15 +193,18 @@ class ParamSpec(BaseModel):
     help_url: str | None = Field(default=None, max_length=512, description="帮助文档 URL")
 
     @model_validator(mode="after")
-    def _validate_constraints(self) -> "ParamSpec":
+    def _validate_constraints(self) -> ParamSpec:
         """交叉校验：``select`` 类型必须有 ``choices``；数值范围合法等。"""
-        if self.type in ("select", "multiselect"):
-            if not self.choices:
-                raise ValueError("select / multiselect 类型必须提供 choices")
+        if self.type in ("select", "multiselect") and not self.choices:
+            raise ValueError("select / multiselect 类型必须提供 choices")
         # range/int/float 必须有 min/max
-        if self.type in ("range", "int", "float"):
-            if self.min is not None and self.max is not None and self.min > self.max:
-                raise ValueError(f"参数 '{self.name}' 的 min ({self.min}) 不能大于 max ({self.max})")
+        if (
+            self.type in ("range", "int", "float")
+            and self.min is not None
+            and self.max is not None
+            and self.min > self.max
+        ):
+            raise ValueError(f"参数 '{self.name}' 的 min ({self.min}) 不能大于 max ({self.max})")
         # step 仅对 range 有意义
         if self.step is not None and self.type != "range":
             # 静默忽略；前端会按 type 渲染
@@ -315,7 +317,7 @@ class NodeContract(BaseModel):
         return v
 
     @model_validator(mode="after")
-    def _validate_param_uniqueness(self) -> "NodeContract":
+    def _validate_param_uniqueness(self) -> NodeContract:
         """确保 ``params`` 中 ``name`` 唯一。"""
         names = [p.name for p in self.params]
         duplicates = {n for n in names if names.count(n) > 1}
@@ -427,17 +429,17 @@ class NodeTestResponse(BaseModel):
 
 
 __all__ = [
-    "PortType",
-    "ParamType",
-    "NodeCategory",
-    "CacheStrategy",
-    "PortSchema",
-    "ParamChoice",
-    "ParamSpec",
     "CacheConfig",
+    "CacheStrategy",
+    "NodeCategory",
     "NodeContract",
-    "NodeDefinitionResponse",
     "NodeDefinitionListResponse",
+    "NodeDefinitionResponse",
     "NodeTestRequest",
     "NodeTestResponse",
+    "ParamChoice",
+    "ParamSpec",
+    "ParamType",
+    "PortSchema",
+    "PortType",
 ]

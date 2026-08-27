@@ -6,11 +6,10 @@
 - ``list[tuple[str, str]]``: 标准格式,如 ``[("ratio", "a / b")]``。
 - ``str``: 多行文本,每行 ``新列名 = 表达式``,如 ``"ratio = a / b\\nflag = a > 0"``。
 """
+
 from __future__ import annotations
 
 from typing import Any
-
-import pandas as pd
 
 from hscredit_studio.core.exceptions import (
     DependencyError,
@@ -78,9 +77,7 @@ class NumExprDeriveNode(BaseNode):
         description="用 numexpr/pandas 表达式批量衍生新特征",
         icon="➕",
         inputs=[PortSchema(name="df", type="DataFrame", required=True)],
-        outputs=[
-            PortSchema(name="df", type="DataFrame", description="含新衍生列的 DataFrame")
-        ],
+        outputs=[PortSchema(name="df", type="DataFrame", description="含新衍生列的 DataFrame")],
         params=[
             ParamSpec(
                 name="expressions",

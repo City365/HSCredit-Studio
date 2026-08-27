@@ -11,13 +11,14 @@ parser 的职责:
 性能:本模块所有算法都是 ``O(V+E)``,
 对 MVP 模板 (单 run 内 < 100 个节点) 完全够用。
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
 
 from hscredit_studio.core.exceptions import WorkflowParseError
-from hscredit_studio.schemas.workflow import EdgeDef, NodeDef, WorkflowDefinition
+from hscredit_studio.schemas.workflow import WorkflowDefinition
 
 
 @dataclass
@@ -154,7 +155,7 @@ def _detect_cycle(plans: dict[str, NodeExecutionPlan]) -> None:
     出现 GRAY → GRAY 的边意味着后向边,即循环。
     """
     WHITE, GRAY, BLACK = 0, 1, 2
-    color: dict[str, int] = {nid: WHITE for nid in plans}
+    color: dict[str, int] = dict.fromkeys(plans, WHITE)
 
     def dfs(nid: str) -> None:
         color[nid] = GRAY
@@ -229,8 +230,8 @@ def get_downstream_ready_nodes(
 __all__ = [
     "NodeExecutionPlan",
     "WorkflowParser",
+    "get_downstream_ready_nodes",
+    "get_initial_nodes",
     "parse_workflow_definition",
     "topological_sort",
-    "get_initial_nodes",
-    "get_downstream_ready_nodes",
 ]

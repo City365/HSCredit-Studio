@@ -75,7 +75,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
                 },
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        token = auth_header[len("Bearer "):]
+        token = auth_header[len("Bearer ") :]
 
         # 4. 解码 JWT
         try:

@@ -5,6 +5,7 @@
 
 ``metric="indices"`` 输出 bin index;同时返回训练好的 ``binner`` 对象。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -47,9 +48,7 @@ class OptimalBinningChiNode(BaseNode):
         params=[
             ParamSpec(name="feature", type="str", label="特征列名", required=True),
             ParamSpec(name="target", type="str", label="目标列名", required=True),
-            ParamSpec(
-                name="min_n_bins", type="int", label="最少分箱数", default=2, min=2, max=10
-            ),
+            ParamSpec(name="min_n_bins", type="int", label="最少分箱数", default=2, min=2, max=10),
             ParamSpec(
                 name="max_n_bins",
                 type="int",

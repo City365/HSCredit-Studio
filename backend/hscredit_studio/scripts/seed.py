@@ -16,11 +16,12 @@
 幂等性:
     所有操作均先查存在性后再插入，可重复执行。
 """
+
 import asyncio
 import sys
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime, timezone
 
 # 将 backend 加入 path（允许从项目根目录直接运行）
 _backend_path = Path(__file__).resolve().parents[2]
@@ -31,10 +32,9 @@ from sqlalchemy import select  # noqa: E402
 
 from hscredit_studio.core.database import session_scope, set_tenant_context  # noqa: E402
 from hscredit_studio.core.security import hash_password  # noqa: E402
-from hscredit_studio.models import Tenant, User, TenantMember, NodeDefinition  # noqa: E402
+from hscredit_studio.models import NodeDefinition, Tenant, TenantMember, User  # noqa: E402
 from hscredit_studio.nodes import NodeRegistry  # noqa: E402
 from hscredit_studio.services.template import ensure_system_templates  # noqa: E402
-
 
 DEMO_TENANTS = [
     {
@@ -43,7 +43,12 @@ DEMO_TENANTS = [
         "plan": "pro",
         "users": [
             {"email": "admin@demo.com", "display_name": "Demo Admin", "password": "DemoPass123!", "role": "owner"},
-            {"email": "analyst@demo.com", "display_name": "Demo Analyst", "password": "DemoPass123!", "role": "analyst"},
+            {
+                "email": "analyst@demo.com",
+                "display_name": "Demo Analyst",
+                "password": "DemoPass123!",
+                "role": "analyst",
+            },
         ],
     },
     {
@@ -157,10 +162,10 @@ async def main():
     await seed_node_definitions()
     await seed_templates()
     print("\n🎉 种子数据植入完成！")
-    print(f"\n登录信息:")
+    print("\n登录信息:")
     for t_info in DEMO_TENANTS:
         print(f"  [租户: {t_info['slug']}]")
-        for u in t_info['users']:
+        for u in t_info["users"]:
             print(f"    {u['role']}: {u['email']} / {u['password']}")
 
 

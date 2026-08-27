@@ -5,6 +5,7 @@ OOT 拆分支持两种模式:
 - 指定 ``oot_time_col``: 按该列升序排序, 取最早 N% 作为 OOT。
 - 未指定: 按 ``stratify`` 字段随机抽样 ``oot_size`` 比例作为 OOT。
 """
+
 from __future__ import annotations
 
 from typing import Any

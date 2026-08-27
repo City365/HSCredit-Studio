@@ -7,9 +7,10 @@
 - 提供 ``list_by_category`` / ``list_contracts`` 用于节点库渲染。
 - 重复注册同名节点会抛错,避免静默覆盖。
 """
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from hscredit_studio.core.exceptions import NodeNotFoundError
 from hscredit_studio.schemas.node_contract import NodeCategory, NodeContract
@@ -36,10 +37,10 @@ class NodeRegistry:
     整个进程内任意位置 ``NodeRegistry.get(...)`` 都能拿到相同结果。
     """
 
-    _nodes: dict[str, type["BaseNode"]] = {}
+    _nodes: ClassVar[dict[str, type[BaseNode]]] = {}
 
     @classmethod
-    def register(cls, node_cls: type["BaseNode"]) -> type["BaseNode"]:
+    def register(cls, node_cls: type[BaseNode]) -> type[BaseNode]:
         """注册节点类 — 通常作为装饰器使用.
 
         Raises:
@@ -67,7 +68,7 @@ class NodeRegistry:
         cls._nodes.pop(node_type, None)
 
     @classmethod
-    def get(cls, node_type: str) -> type["BaseNode"]:
+    def get(cls, node_type: str) -> type[BaseNode]:
         """按 ``node_type`` 获取节点类.
 
         Raises:
@@ -81,12 +82,12 @@ class NodeRegistry:
         return cls._nodes[node_type]
 
     @classmethod
-    def try_get(cls, node_type: str) -> type["BaseNode"] | None:
+    def try_get(cls, node_type: str) -> type[BaseNode] | None:
         """按 ``node_type`` 获取节点类,未注册返回 ``None``."""
         return cls._nodes.get(node_type)
 
     @classmethod
-    def list_all(cls) -> list[type["BaseNode"]]:
+    def list_all(cls) -> list[type[BaseNode]]:
         """列出所有已注册节点类(无序,按注册顺序插入)."""
         return list(cls._nodes.values())
 
@@ -96,7 +97,7 @@ class NodeRegistry:
         return [ncls.contract for ncls in cls._nodes.values()]
 
     @classmethod
-    def list_by_category(cls, category: NodeCategory) -> list[type["BaseNode"]]:
+    def list_by_category(cls, category: NodeCategory) -> list[type[BaseNode]]:
         """按分类列出节点."""
         return [ncls for ncls in cls._nodes.values() if ncls.contract.category == category]
 
@@ -115,7 +116,7 @@ class NodeRegistry:
         cls._nodes.clear()
 
 
-def register_node(node_cls: type["BaseNode"]) -> type["BaseNode"]:
+def register_node(node_cls: type[BaseNode]) -> type[BaseNode]:
     """节点注册装饰器.
 
     用法::

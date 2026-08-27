@@ -23,7 +23,7 @@ from hscredit_studio.schemas.auth import (
     RefreshRequest,
     RefreshResponse,
 )
-from hscredit_studio.services.auth import authenticate, logout, refresh_tokens
+from hscredit_studio.services.auth import authenticate, refresh_tokens
 
 router = APIRouter(tags=["认证"])
 

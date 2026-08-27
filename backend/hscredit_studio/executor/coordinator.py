@@ -19,9 +19,10 @@
   设置 RLS context。
 - 重试策略:``retry_count < 3`` 且错误可重试 → 指数退避 ``countdown = 2 ** retry_count``。
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -31,16 +32,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from hscredit_studio.core.database import session_scope, set_tenant_context
 from hscredit_studio.core.exceptions import FeatureNotFoundError, NodeExecutionError
 from hscredit_studio.core.logging import get_logger
+from hscredit_studio.executor.parser import (
+    get_initial_nodes,
+    parse_workflow_definition,
+)
 from hscredit_studio.models import (
     NodeExecution,
     Run,
     WorkflowVersion,
 )
 from hscredit_studio.schemas.workflow import WorkflowDefinition
-from hscredit_studio.executor.parser import (
-    get_initial_nodes,
-    parse_workflow_definition,
-)
 from hscredit_studio.services.events import publish_event
 
 _log = get_logger(__name__)
@@ -118,7 +119,8 @@ class RunCoordinator:
             )
             # 推送 run_status 事件
             await publish_event(
-                run_id, "run_status",
+                run_id,
+                "run_status",
                 status=run.status,
                 total_nodes=len(plans),
                 initial_nodes=queued_count,
@@ -174,11 +176,7 @@ class RunCoordinator:
                 return
 
             # 加载同 run 所有 NodeExecution,用于判定下游是否就绪
-            all_ne = (
-                await session.scalars(
-                    select(NodeExecution).where(NodeExecution.run_id == ne.run_id)
-                )
-            ).all()
+            all_ne = (await session.scalars(select(NodeExecution).where(NodeExecution.run_id == ne.run_id))).all()
             status_by_id: dict[str, str] = {n.node_id: n.status for n in all_ne}
 
             # 把当前节点加入 completed 集合,推进下游
@@ -226,7 +224,8 @@ class RunCoordinator:
 
             # 推送 WebSocket 事件（commit 后再发布，避免消费者读旧状态）
             await publish_event(
-                run.run_id, "node_execution",
+                run.run_id,
+                "node_execution",
                 node_id=ne.node_id,
                 node_type=ne.node_type,
                 status=ne.status,
@@ -235,7 +234,8 @@ class RunCoordinator:
             )
             if run_completed:
                 await publish_event(
-                    run.run_id, "run_status",
+                    run.run_id,
+                    "run_status",
                     status=run.status,
                     duration_sec=_calc_duration(run.started_at, run.finished_at),
                     total_nodes=len(all_ne),
@@ -281,11 +281,12 @@ class RunCoordinator:
                 run_node.apply_async(
                     args=[str(node_exec_id)],
                     queue="nodes-general",
-                    countdown=2 ** ne.retry_count,
+                    countdown=2**ne.retry_count,
                 )
                 # 推送 retry 事件
                 await publish_event(
-                    ne.run_id, "node_execution",
+                    ne.run_id,
+                    "node_execution",
                     node_id=ne.node_id,
                     node_type=ne.node_type,
                     status=ne.status,
@@ -316,7 +317,8 @@ class RunCoordinator:
             # 推送失败事件
             run_id = ne.run_id
             await publish_event(
-                run_id, "node_execution",
+                run_id,
+                "node_execution",
                 node_id=ne.node_id,
                 node_type=ne.node_type,
                 status=ne.status,
@@ -325,7 +327,8 @@ class RunCoordinator:
             )
             if run is not None:
                 await publish_event(
-                    run_id, "run_status",
+                    run_id,
+                    "run_status",
                     status=run.status,
                     error_code=error_info.get("code"),
                 )
@@ -356,14 +359,8 @@ def _calc_duration(start: datetime | None, end: datetime | None) -> int | None:
     if start is None or end is None:
         return None
     try:
-        if start.tzinfo is not None:
-            start_ts = start.timestamp()
-        else:
-            start_ts = _naive_to_utc_ts(start)
-        if end.tzinfo is not None:
-            end_ts = end.timestamp()
-        else:
-            end_ts = _naive_to_utc_ts(end)
+        start_ts = start.timestamp() if start.tzinfo is not None else _naive_to_utc_ts(start)
+        end_ts = end.timestamp() if end.tzinfo is not None else _naive_to_utc_ts(end)
         return int(end_ts - start_ts)
     except Exception:
         return None
@@ -371,7 +368,7 @@ def _calc_duration(start: datetime | None, end: datetime | None) -> int | None:
 
 def _naive_to_utc_ts(dt: datetime) -> float:
     """把 naive datetime 视为 UTC 转为 Unix 时间戳."""
-    return dt.replace(tzinfo=timezone.utc).timestamp()
+    return dt.replace(tzinfo=UTC).timestamp()
 
 
 # 兼容导出:让 task 模块可以显式引用

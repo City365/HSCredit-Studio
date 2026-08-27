@@ -8,12 +8,14 @@
 - 查询支持丰富过滤: 租户/用户/动作/资源类型/时间区间/分页
 - 导出 CSV (前端 Excel/CSV 导出), 支持时间区间过滤
 """
+
 from __future__ import annotations
 
 import csv
 import io
+from collections.abc import AsyncIterator
 from datetime import datetime, timedelta
-from typing import Any, AsyncIterator
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import and_, func, select
@@ -28,8 +30,10 @@ _log = get_logger(__name__)
 
 # ===== 标准动作常量 (审计字典) =====
 
+
 class AuditAction:
     """审计动作字符串常量 — 避免业务代码中出现 magic strings."""
+
     LOGIN = "login"
     LOGOUT = "logout"
     LOGIN_FAILED = "login_failed"
@@ -282,12 +286,12 @@ def hot_retention_cutoff(now: datetime | None = None) -> datetime:
 
 
 __all__ = [
+    "DEFAULT_HOT_RETENTION_DAYS",
     "AuditAction",
     "ResourceType",
+    "hot_retention_cutoff",
+    "iter_events_csv",
+    "list_events",
     "record_event",
     "record_login",
-    "list_events",
-    "iter_events_csv",
-    "hot_retention_cutoff",
-    "DEFAULT_HOT_RETENTION_DAYS",
 ]

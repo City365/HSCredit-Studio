@@ -16,6 +16,7 @@
 worker 启动后,所有 ``run_node.apply_async`` 调用走的是同一进程内的
 事件循环,效率与单次 ``run`` 一致。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,7 +24,7 @@ import hashlib
 import json
 import pickle
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -41,7 +42,6 @@ from hscredit_studio.services.artifacts import (
 )
 from hscredit_studio.services.cache import CacheKeyGenerator, close_cache_client, get_cache_client
 from hscredit_studio.services.events import publish_event
-from hscredit_studio.services.storage import get_storage_client
 
 _log = get_logger(__name__)
 
@@ -125,12 +125,15 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
         await session.commit()
         # 推送 running 状态
         await publish_event(
-            ne.run_id, "node_execution",
-            node_id=ne.node_id, node_type=ne.node_type,
+            ne.run_id,
+            "node_execution",
+            node_id=ne.node_id,
+            node_type=ne.node_type,
             status=ne.status,
         )
         await publish_event(
-            ne.run_id, "log",
+            ne.run_id,
+            "log",
             node_id=ne.node_id,
             stream="system",
             level="info",
@@ -171,9 +174,7 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 # 缓存命中
                 cached_data = pickle.loads(cached_bytes) if isinstance(cached_bytes, bytes) else cached_bytes
                 ne.status = "cached_hit"
-                ne.cached_from_run_id = (
-                    UUID(cached_data["source_run_id"]) if cached_data.get("source_run_id") else None
-                )
+                ne.cached_from_run_id = UUID(cached_data["source_run_id"]) if cached_data.get("source_run_id") else None
                 ne.finished_at = datetime.utcnow()
                 await session.commit()
                 await RunCoordinator.handle_node_success(
@@ -189,7 +190,8 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                     source_run_id=str(ne.cached_from_run_id),
                 )
                 await publish_event(
-                    ne.run_id, "log",
+                    ne.run_id,
+                    "log",
                     node_id=ne.node_id,
                     stream="system",
                     level="info",
@@ -237,7 +239,8 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 outputs_count=len(outputs),
             )
             await publish_event(
-                ne.run_id, "log",
+                ne.run_id,
+                "log",
                 node_id=ne.node_id,
                 stream="system",
                 level="info",
@@ -262,7 +265,8 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 http_status=e.http_status,
             )
             await publish_event(
-                ne.run_id, "log",
+                ne.run_id,
+                "log",
                 node_id=ne.node_id,
                 stream="stderr",
                 level="error",
@@ -288,7 +292,8 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 node_type=ne.node_type,
             )
             await publish_event(
-                ne.run_id, "log",
+                ne.run_id,
+                "log",
                 node_id=ne.node_id,
                 stream="stderr",
                 level="error",
@@ -366,6 +371,7 @@ async def _save_outputs(
             continue
         try:
             import pandas as _pd
+
             if isinstance(value, _pd.DataFrame) and value.empty:
                 continue
         except ImportError:
@@ -406,4 +412,4 @@ def run_heavy_node(self, node_exec_id: str) -> dict[str, Any]:
     return asyncio.run(_run_node_async(UUID(node_exec_id)))
 
 
-__all__ = ["run_node", "run_heavy_node"]
+__all__ = ["run_heavy_node", "run_node"]

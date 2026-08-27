@@ -10,9 +10,9 @@
 
 Phase 2 批次 11 实现 — 用于前端 ``/monitor`` 页面.
 """
+
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -21,15 +21,14 @@ from fastapi import APIRouter, Query
 from sqlalchemy import case, func, select
 
 from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
+from hscredit_studio.core.logging import get_logger
 from hscredit_studio.models import (
-    AuditEvent,
-    NodeExecution,
     NodeArtifact,
+    NodeExecution,
     Run,
     Workflow,
     WorkflowVersion,
 )
-from hscredit_studio.core.logging import get_logger
 
 router = APIRouter(tags=["监控"])
 _log = get_logger(__name__)
@@ -54,94 +53,115 @@ async def monitor_overview(
     last_7d = now - timedelta(days=7)
 
     # Run 总数 / 活跃 / 24h / 7d
-    run_total = await session.scalar(
-        select(func.count(Run.run_id)).where(Run.tenant_id == tenant_uuid)
-    ) or 0
+    run_total = await session.scalar(select(func.count(Run.run_id)).where(Run.tenant_id == tenant_uuid)) or 0
 
-    run_active = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.status.in_(["running", "queued", "pending"]),
+    run_active = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.status.in_(["running", "queued", "pending"]),
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    run_24h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= last_24h,
+    run_24h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= last_24h,
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    run_7d = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= last_7d,
+    run_7d = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= last_7d,
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    run_success_24h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= last_24h,
-            Run.status == "success",
+    run_success_24h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= last_24h,
+                Run.status == "success",
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    run_failed_24h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= last_24h,
-            Run.status == "failed",
+    run_failed_24h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= last_24h,
+                Run.status == "failed",
+            )
         )
-    ) or 0
+        or 0
+    )
 
     success_rate = (run_success_24h / run_24h) if run_24h > 0 else 0.0
 
     # NodeExecution 总数 + 成功率
-    node_total = await session.scalar(
-        select(func.count(NodeExecution.node_exec_id)).where(
-            NodeExecution.run_id.in_(
-                select(Run.run_id).where(Run.tenant_id == tenant_uuid)
+    node_total = (
+        await session.scalar(
+            select(func.count(NodeExecution.node_exec_id)).where(
+                NodeExecution.run_id.in_(select(Run.run_id).where(Run.tenant_id == tenant_uuid))
             )
         )
-    ) or 0
+        or 0
+    )
 
-    node_success = await session.scalar(
-        select(func.count(NodeExecution.node_exec_id)).where(
-            NodeExecution.status == "success",
-            NodeExecution.run_id.in_(
-                select(Run.run_id).where(Run.tenant_id == tenant_uuid)
-            ),
+    node_success = (
+        await session.scalar(
+            select(func.count(NodeExecution.node_exec_id)).where(
+                NodeExecution.status == "success",
+                NodeExecution.run_id.in_(select(Run.run_id).where(Run.tenant_id == tenant_uuid)),
+            )
         )
-    ) or 0
+        or 0
+    )
 
     node_success_rate = (node_success / node_total) if node_total > 0 else 0.0
 
     # Workflow / Template
-    wf_total = await session.scalar(
-        select(func.count(Workflow.workflow_id)).where(
-            Workflow.tenant_id == tenant_uuid, Workflow.deleted_at.is_(None)
+    wf_total = (
+        await session.scalar(
+            select(func.count(Workflow.workflow_id)).where(
+                Workflow.tenant_id == tenant_uuid, Workflow.deleted_at.is_(None)
+            )
         )
-    ) or 0
+        or 0
+    )
 
-    wf_version_total = await session.scalar(
-        select(func.count(WorkflowVersion.version_id))
-        .join(Workflow, Workflow.workflow_id == WorkflowVersion.workflow_id)
-        .where(Workflow.tenant_id == tenant_uuid)
-    ) or 0
+    wf_version_total = (
+        await session.scalar(
+            select(func.count(WorkflowVersion.version_id))
+            .join(Workflow, Workflow.workflow_id == WorkflowVersion.workflow_id)
+            .where(Workflow.tenant_id == tenant_uuid)
+        )
+        or 0
+    )
 
     # Artifact 总数 + 总大小
-    artifact_total = await session.scalar(
-        select(func.count(NodeArtifact.artifact_id)).where(
-            NodeArtifact.tenant_id == tenant_uuid
-        )
-    ) or 0
+    artifact_total = (
+        await session.scalar(select(func.count(NodeArtifact.artifact_id)).where(NodeArtifact.tenant_id == tenant_uuid))
+        or 0
+    )
 
-    artifact_size = await session.scalar(
-        select(func.coalesce(func.sum(NodeArtifact.size_bytes), 0)).where(
-            NodeArtifact.tenant_id == tenant_uuid
+    artifact_size = (
+        await session.scalar(
+            select(func.coalesce(func.sum(NodeArtifact.size_bytes), 0)).where(NodeArtifact.tenant_id == tenant_uuid)
         )
-    ) or 0
+        or 0
+    )
 
     # 平均 Run 耗时 (秒)
     avg_duration = await session.scalar(
@@ -298,9 +318,7 @@ async def nodes_throughput(
             select(
                 NodeExecution.node_type,
                 func.count(NodeExecution.node_exec_id).label("cnt"),
-                func.sum(case((NodeExecution.status == "success", 1), else_=0)).label(
-                    "success_cnt"
-                ),
+                func.sum(case((NodeExecution.status == "success", 1), else_=0)).label("success_cnt"),
                 func.avg(NodeExecution.duration_sec).label("avg_dur"),
                 func.max(NodeExecution.duration_sec).label("max_dur"),
             )
@@ -375,19 +393,25 @@ async def active_alerts(
     alerts: list[dict[str, Any]] = []
 
     # Alert 1: 24h 失败率 > 30%
-    failed_24h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= now - timedelta(hours=24),
-            Run.status == "failed",
+    failed_24h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= now - timedelta(hours=24),
+                Run.status == "failed",
+            )
         )
-    ) or 0
-    total_24h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= now - timedelta(hours=24),
+        or 0
+    )
+    total_24h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= now - timedelta(hours=24),
+            )
         )
-    ) or 0
+        or 0
+    )
     if total_24h > 0:
         fail_rate = failed_24h / total_24h
         if fail_rate > 0.3:
@@ -424,13 +448,16 @@ async def active_alerts(
         )
 
     # Alert 3: 最近 1h 失败 >= 5 次
-    failed_1h = await session.scalar(
-        select(func.count(Run.run_id)).where(
-            Run.tenant_id == tenant_uuid,
-            Run.submitted_at >= last_1h,
-            Run.status == "failed",
+    failed_1h = (
+        await session.scalar(
+            select(func.count(Run.run_id)).where(
+                Run.tenant_id == tenant_uuid,
+                Run.submitted_at >= last_1h,
+                Run.status == "failed",
+            )
         )
-    ) or 0
+        or 0
+    )
     if failed_1h >= 5:
         alerts.append(
             {

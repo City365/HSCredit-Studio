@@ -12,6 +12,7 @@ from hscredit_studio.core.config import settings
 
 class Base(DeclarativeBase):
     """SQLAlchemy 声明基类."""
+
     pass
 
 

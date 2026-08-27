@@ -20,7 +20,8 @@ from sqlalchemy import (
     UniqueConstraint,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hscredit_studio.core.database import Base
@@ -67,7 +68,7 @@ class Workflow(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializ
     )
 
     # 关系
-    versions: Mapped[list["WorkflowVersion"]] = relationship(
+    versions: Mapped[list[WorkflowVersion]] = relationship(
         "WorkflowVersion",
         back_populates="workflow",
         cascade="all, delete-orphan",
@@ -133,7 +134,7 @@ class WorkflowVersion(Base, TimestampMixin, ModelSerializerMixin):
     )
 
     # 关系
-    workflow: Mapped["Workflow"] = relationship("Workflow", back_populates="versions")
+    workflow: Mapped[Workflow] = relationship("Workflow", back_populates="versions")
 
     __table_args__ = (
         UniqueConstraint("workflow_id", "version_number", name="uq_workflow_versions_wv"),
@@ -172,13 +173,11 @@ class WorkflowTemplate(Base, TimestampMixin):
         comment="使用的模板版本号",
     )
 
-    __table_args__ = (
-        Index("ix_workflow_templates_template", "template_id"),
-    )
+    __table_args__ = (Index("ix_workflow_templates_template", "template_id"),)
 
 
 __all__ = [
     "Workflow",
-    "WorkflowVersion",
     "WorkflowTemplate",
+    "WorkflowVersion",
 ]

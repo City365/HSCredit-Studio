@@ -9,15 +9,14 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 from prometheus_client import make_asgi_app
 
+from hscredit_studio.api.exception_handlers import register_exception_handlers
+from hscredit_studio.api.v1 import audit, auth, health, monitor, nodes, runs, templates, workflows, ws
 from hscredit_studio.core.config import settings
 from hscredit_studio.core.logging import setup_logging
-from hscredit_studio.api.exception_handlers import register_exception_handlers
-from hscredit_studio.api.v1 import health
-from hscredit_studio.api.v1 import audit, auth, monitor, nodes, workflows, runs, templates, ws
-from hscredit_studio.middleware.tenant import TenantMiddleware
-from hscredit_studio.middleware.security import SecurityHeadersMiddleware
-from hscredit_studio.middleware.request_id import RequestIDMiddleware
 from hscredit_studio.middleware.rate_limit import RateLimitMiddleware
+from hscredit_studio.middleware.request_id import RequestIDMiddleware
+from hscredit_studio.middleware.security import SecurityHeadersMiddleware
+from hscredit_studio.middleware.tenant import TenantMiddleware
 
 # 初始化日志
 setup_logging(settings.log_level)

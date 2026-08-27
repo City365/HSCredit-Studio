@@ -14,6 +14,7 @@ hscredit 库的 ``RoundScoreCard`` 类
   后续 ``model_report`` 节点仍可消费。
 - 一旦 hscredit 补齐 ``RoundScoreCard``, 改用其 ``fit_transform`` 接口。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -32,7 +33,6 @@ from hscredit_studio.schemas.node_contract import (
     PortSchema,
 )
 
-
 _SCORE_COLUMN_HINTS = ("score", "分", "对应分数")
 
 
@@ -48,7 +48,7 @@ def _find_score_column(columns: list[str]) -> str | None:
         if "对应分数" in str(col) or lc == "score" or "score_value" in lc:
             return col
     # 2) 含 "分" 或 "score" 的兜底匹配
-    for col, lc in zip(columns, lowered):
+    for col, lc in zip(columns, lowered, strict=False):
         if "分" in str(col) or "score" in lc:
             return col
     return None

@@ -1,4 +1,5 @@
 """CSV 文件接入节点."""
+
 from __future__ import annotations
 
 import os

@@ -20,7 +20,8 @@ from sqlalchemy import (
     Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from hscredit_studio.core.database import Base
@@ -29,7 +30,6 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
-
 
 RUN_STATUS_VALUES = (
     "pending",
@@ -138,7 +138,7 @@ class Run(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
     )
 
     # 关系
-    node_executions: Mapped[list["NodeExecution"]] = relationship(
+    node_executions: Mapped[list[NodeExecution]] = relationship(
         "NodeExecution",
         back_populates="run",
         cascade="all, delete-orphan",
@@ -255,12 +255,12 @@ class NodeExecution(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
     duration_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # 关系
-    run: Mapped["Run"] = relationship(
+    run: Mapped[Run] = relationship(
         "Run",
         back_populates="node_executions",
         foreign_keys=[run_id],
     )
-    logs: Mapped[list["NodeExecutionLog"]] = relationship(
+    logs: Mapped[list[NodeExecutionLog]] = relationship(
         "NodeExecutionLog",
         back_populates="node_execution",
         cascade="all, delete-orphan",
@@ -319,21 +319,19 @@ class NodeExecutionLog(Base, ModelSerializerMixin):
     )
 
     # 关系
-    node_execution: Mapped["NodeExecution"] = relationship(
+    node_execution: Mapped[NodeExecution] = relationship(
         "NodeExecution",
         back_populates="logs",
     )
 
-    __table_args__ = (
-        Index("ix_node_execution_logs_logged", "node_exec_id", "logged_at"),
-    )
+    __table_args__ = (Index("ix_node_execution_logs_logged", "node_exec_id", "logged_at"),)
 
 
 __all__ = [
-    "RUN_STATUS_VALUES",
-    "NODE_STATUS_VALUES",
     "LOG_STREAM_VALUES",
-    "Run",
+    "NODE_STATUS_VALUES",
+    "RUN_STATUS_VALUES",
     "NodeExecution",
     "NodeExecutionLog",
+    "Run",
 ]

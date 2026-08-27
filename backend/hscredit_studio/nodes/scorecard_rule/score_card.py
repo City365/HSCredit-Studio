@@ -5,11 +5,10 @@
 1. 显式传入 ``binner`` + ``encoder``: 已训练好的上游组件, 复用。
 2. 仅传入 raw features + target: 节点内部自动按 :class:`ScoreCard` 默认行为处理。
 """
+
 from __future__ import annotations
 
 from typing import Any
-
-import pandas as pd
 
 from hscredit_studio.core.exceptions import (
     DependencyError,
@@ -186,15 +185,15 @@ class ScoreCardNode(BaseNode):
         X = df[features]
         y = df[target]
 
-        sc_kwargs: dict[str, Any] = dict(
-            pdo=float(params.get("pdo", 60.0)),
-            rate=float(params.get("rate", 2.0)),
-            base_score=float(params.get("base_score", 750.0)),
-            base_odds=float(params.get("base_odds", 35.0)),
-            direction=params.get("direction", "descending"),
-            decimal=int(params.get("decimal", 2)),
-            target=target,
-        )
+        sc_kwargs: dict[str, Any] = {
+            "pdo": float(params.get("pdo", 60.0)),
+            "rate": float(params.get("rate", 2.0)),
+            "base_score": float(params.get("base_score", 750.0)),
+            "base_odds": float(params.get("base_odds", 35.0)),
+            "direction": params.get("direction", "descending"),
+            "decimal": int(params.get("decimal", 2)),
+            "target": target,
+        }
         # 可选复用上游组件（多个上游可能各自带 encoder/binner，任一可用即采纳）
         binner = inputs.get("binner")
         encoder = inputs.get("encoder")
@@ -221,6 +220,5 @@ class ScoreCardNode(BaseNode):
             # ScoreCard 内部 BinnerEncoder 转换对 WOE 列名匹配要求严格；
             # 此处降级：返回空 dict + 不阻塞下游 model_report（model_report 主要用 LR model）
             score_card_obj = None
-            points_df = None
 
         return {"score_card": score_card_obj, "score_points": None, "model": inputs.get("model"), "df": df}

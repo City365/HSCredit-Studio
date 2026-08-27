@@ -37,20 +37,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Referrer 限制
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         # 关闭硬件 API（API 不需要）
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
-        )
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
         # HSTS 仅在 HTTPS 下注入（HTTP 注入会被浏览器忽略且无意义）
         if request.url.scheme == "https":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         # CSP：API 不渲染 HTML，默认拒绝所有
         if request.url.path.startswith("/api/"):
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'none'; frame-ancestors 'none'"
-            )
+            response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
 
         return response

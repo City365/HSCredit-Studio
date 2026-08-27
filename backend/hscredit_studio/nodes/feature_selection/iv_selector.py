@@ -3,11 +3,10 @@
 复用 ``hscredit.core.selectors.IVSelector``;``exclude`` 用于强制排除
 特定列(如 ID 列、时间列)。
 """
+
 from __future__ import annotations
 
 from typing import Any
-
-import pandas as pd
 
 from hscredit_studio.core.exceptions import (
     DependencyError,

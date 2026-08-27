@@ -148,10 +148,10 @@ class LogoutRequest(BaseModel):
 
 __all__ = [
     "LoginRequest",
-    "TokenPair",
-    "UserInfo",
     "LoginResponse",
+    "LogoutRequest",
     "RefreshRequest",
     "RefreshResponse",
-    "LogoutRequest",
+    "TokenPair",
+    "UserInfo",
 ]

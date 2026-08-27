@@ -15,9 +15,11 @@
 3. 订阅 Redis pub/sub,转发 ``WSEvent`` 到客户端
 4. 客户端断开 / token 失效时优雅清理
 """
+
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from typing import Any
 from uuid import UUID
@@ -25,7 +27,6 @@ from uuid import UUID
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 from jose import JWTError
-from sqlalchemy import select
 
 from hscredit_studio.core.config import settings
 from hscredit_studio.core.database import session_scope
@@ -143,7 +144,7 @@ async def run_status_ws(
                 )
                 # 客户端 ping/pong：收到任何文本就忽略
                 _ = client_msg
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
             except WebSocketDisconnect:
                 _log.info("ws_client_disconnected", run_id=str(run_id))
@@ -154,9 +155,7 @@ async def run_status_ws(
             # keep-alive（防止 idle 连接被中间设备关闭）
             if now - last_keepalive > _KEEPALIVE_INTERVAL:
                 try:
-                    await websocket.send_json(
-                        _build_event("ping", str(run_id), ts=now)
-                    )
+                    await websocket.send_json(_build_event("ping", str(run_id), ts=now))
                     last_keepalive = now
                 except Exception:
                     break
@@ -172,14 +171,10 @@ async def run_status_ws(
                 await pubsub.close()
             except Exception:
                 pass
-        try:
+        with contextlib.suppress(Exception):
             await redis_client.close()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             await websocket.close()
-        except Exception:
-            pass
         _log.info("ws_closed", run_id=str(run_id))
 
 

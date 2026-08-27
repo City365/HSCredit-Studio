@@ -6,6 +6,7 @@
 注意: WOE 编码监督式, ``fit`` 需要目标列; 当 ``binner`` 输入不为
 空时仅记录上下文,不参与 fit/transform。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -135,7 +136,7 @@ class WOEEncoderNode(BaseNode):
         # 拼上 ``df.drop(features+[target], axis=1)`` 保留非特征列（如样本 ID、辅助列）。
         keep_cols = [c for c in df.columns if c not in features and c != target]
         woe_df = pd.concat(
-            [woe_features.reset_index(drop=True), df[keep_cols + [target]].reset_index(drop=True)],
+            [woe_features.reset_index(drop=True), df[[*keep_cols, target]].reset_index(drop=True)],
             axis=1,
         )
         return {"encoder": encoder, "woe_df": woe_df}

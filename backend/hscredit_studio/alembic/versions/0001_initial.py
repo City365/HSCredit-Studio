@@ -46,20 +46,19 @@ RLS（Row Level Security）策略：
 
 from __future__ import annotations
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.dialects.postgresql import JSONB, INET, UUID as PGUUID
-
 from alembic import op
-
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 # revision identifiers, used by Alembic.
 revision: str = "0001_initial"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 # ===== 公共 helper =====
@@ -76,8 +75,7 @@ def _enable_rls(table_name: str) -> None:
     """
     op.execute(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY")
     op.execute(f"ALTER TABLE {table_name} FORCE ROW LEVEL SECURITY")
-    op.execute(
-        f"""
+    op.execute(f"""
         CREATE POLICY tenant_isolation ON {table_name}
             FOR ALL
             USING (
@@ -89,8 +87,7 @@ def _enable_rls(table_name: str) -> None:
                 tenant_id::text = current_setting('app.current_tenant', true)
                 OR current_setting('app.current_tenant', true) IS NULL
             )
-        """
-    )
+        """)
 
 
 def _disable_rls(table_name: str) -> None:
@@ -147,11 +144,17 @@ def upgrade() -> None:
     # ---- 3. tenant_members ----
     op.create_table(
         "tenant_members",
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("user_id", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="CASCADE"), primary_key=True
+        ),
+        sa.Column(
+            "user_id", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="CASCADE"), primary_key=True
+        ),
         sa.Column("role", sa.String(32), nullable=False),
         sa.Column("status", sa.String(32), nullable=False, server_default=sa.text("'active'")),
-        sa.Column("invited_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "invited_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("joined_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
@@ -164,13 +167,17 @@ def upgrade() -> None:
     op.create_table(
         "user_invitations",
         sa.Column("invitation_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="CASCADE"), nullable=False
+        ),
         sa.Column("email", sa.String(254), nullable=False),
         sa.Column("role", sa.String(32), nullable=False),
         sa.Column("token", sa.String(128), nullable=False, unique=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("invited_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "invited_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         comment="用户邀请记录",
@@ -182,7 +189,9 @@ def upgrade() -> None:
     op.create_table(
         "api_keys",
         sa.Column("api_key_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("user_id", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="RESTRICT"), nullable=False),
         sa.Column("name", sa.String(128), nullable=False),
         sa.Column("key_prefix", sa.String(16), nullable=False),
@@ -205,7 +214,9 @@ def upgrade() -> None:
     op.create_table(
         "templates",
         sa.Column("template_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("category", sa.String(64), nullable=False),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
@@ -222,7 +233,9 @@ def upgrade() -> None:
         sa.Column("use_count", sa.Integer, nullable=False, server_default=sa.text("0")),
         sa.Column("rating_avg", sa.Numeric(3, 2), nullable=True),
         sa.Column("rating_count", sa.Integer, nullable=False, server_default=sa.text("0")),
-        sa.Column("created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
@@ -249,12 +262,16 @@ def upgrade() -> None:
     op.create_table(
         "workflows",
         sa.Column("workflow_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("current_version_id", PGUUID(as_uuid=True), nullable=True),
         sa.Column("tags", JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
-        sa.Column("created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
@@ -279,11 +296,18 @@ def upgrade() -> None:
     op.create_table(
         "workflow_versions",
         sa.Column("version_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("workflow_id", PGUUID(as_uuid=True), sa.ForeignKey("workflows.workflow_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "workflow_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("workflows.workflow_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("version_number", sa.Integer, nullable=False),
         sa.Column("definition", JSONB, nullable=False),
         sa.Column("change_summary", sa.Text, nullable=True),
-        sa.Column("created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         comment="工作流版本历史",
@@ -295,9 +319,7 @@ def upgrade() -> None:
         ["definition"],
         postgresql_using="gin",
     )
-    op.create_unique_constraint(
-        "uq_workflow_versions_wv", "workflow_versions", ["workflow_id", "version_number"]
-    )
+    op.create_unique_constraint("uq_workflow_versions_wv", "workflow_versions", ["workflow_id", "version_number"])
 
     # 追加 workflows.current_version_id FK（workflows 创建时 templates/workflow_versions 都不存在）
     op.create_foreign_key(
@@ -312,8 +334,18 @@ def upgrade() -> None:
     # ---- 8. workflow_templates (关联 workflow <-> template) ----
     op.create_table(
         "workflow_templates",
-        sa.Column("workflow_id", PGUUID(as_uuid=True), sa.ForeignKey("workflows.workflow_id", ondelete="CASCADE"), primary_key=True),
-        sa.Column("template_id", PGUUID(as_uuid=True), sa.ForeignKey("templates.template_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "workflow_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("workflows.workflow_id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
+        sa.Column(
+            "template_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("templates.template_id", ondelete="RESTRICT"),
+            nullable=False,
+        ),
         sa.Column("template_version_number", sa.Integer, nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
@@ -325,7 +357,12 @@ def upgrade() -> None:
     op.create_table(
         "template_versions",
         sa.Column("version_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("template_id", PGUUID(as_uuid=True), sa.ForeignKey("templates.template_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "template_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("templates.template_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("version_number", sa.Integer, nullable=False),
         sa.Column("nodes", JSONB, nullable=False),
         sa.Column("edges", JSONB, nullable=False),
@@ -337,16 +374,21 @@ def upgrade() -> None:
         comment="模板版本",
     )
     op.create_index("ix_template_versions_template", "template_versions", ["template_id"])
-    op.create_unique_constraint(
-        "uq_template_versions_t_vnum", "template_versions", ["template_id", "version_number"]
-    )
+    op.create_unique_constraint("uq_template_versions_t_vnum", "template_versions", ["template_id", "version_number"])
 
     # ---- 11. template_ratings ----
     op.create_table(
         "template_ratings",
         sa.Column("rating_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("template_id", PGUUID(as_uuid=True), sa.ForeignKey("templates.template_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
+        sa.Column(
+            "template_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("templates.template_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("user_id", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False),
         sa.Column("rating", sa.Integer, nullable=False),
         sa.Column("comment", sa.Text, nullable=True),
@@ -356,25 +398,35 @@ def upgrade() -> None:
     )
     op.create_index("ix_template_ratings_template", "template_ratings", ["template_id"])
     op.create_index("ix_template_ratings_tenant_id", "template_ratings", ["tenant_id"])
-    op.create_unique_constraint(
-        "uq_template_ratings_user", "template_ratings", ["template_id", "user_id"]
-    )
-    op.create_check_constraint(
-        "ck_template_ratings_range", "template_ratings", "rating >= 1 AND rating <= 5"
-    )
+    op.create_unique_constraint("uq_template_ratings_user", "template_ratings", ["template_id", "user_id"])
+    op.create_check_constraint("ck_template_ratings_range", "template_ratings", "rating >= 1 AND rating <= 5")
     _enable_rls("template_ratings")
 
     # ---- 12. runs ----
     op.create_table(
         "runs",
         sa.Column("run_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("workflow_id", PGUUID(as_uuid=True), sa.ForeignKey("workflows.workflow_id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("workflow_version_id", PGUUID(as_uuid=True), sa.ForeignKey("workflow_versions.version_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
+        sa.Column(
+            "workflow_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("workflows.workflow_id", ondelete="RESTRICT"),
+            nullable=False,
+        ),
+        sa.Column(
+            "workflow_version_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("workflow_versions.version_id", ondelete="RESTRICT"),
+            nullable=False,
+        ),
         sa.Column("workflow_version_number", sa.Integer, nullable=False),
         sa.Column("run_number", sa.Integer, nullable=False),
         sa.Column("status", sa.String(32), nullable=False),
-        sa.Column("submitted_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "submitted_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
@@ -388,9 +440,7 @@ def upgrade() -> None:
         comment="工作流执行",
     )
     op.create_index("ix_runs_workflow_id", "runs", ["workflow_id"])
-    op.create_index(
-        "uq_runs_tenant_run_number", "runs", ["tenant_id", "run_number"], unique=True
-    )
+    op.create_index("uq_runs_tenant_run_number", "runs", ["tenant_id", "run_number"], unique=True)
     op.create_index(
         "ix_runs_tenant_submitted",
         "runs",
@@ -412,14 +462,18 @@ def upgrade() -> None:
     op.create_table(
         "node_executions",
         sa.Column("node_exec_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("run_id", PGUUID(as_uuid=True), sa.ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False),
         sa.Column("node_id", sa.String(128), nullable=False),
         sa.Column("node_type", sa.String(128), nullable=False),
         sa.Column("status", sa.String(32), nullable=False, server_default=sa.text("'queued'")),
         sa.Column("input_hash", sa.String(64), nullable=True),
         sa.Column("output_hash", sa.String(64), nullable=True),
-        sa.Column("cached_from_run_id", PGUUID(as_uuid=True), sa.ForeignKey("runs.run_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "cached_from_run_id", PGUUID(as_uuid=True), sa.ForeignKey("runs.run_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("params", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("artifact_paths", JSONB, nullable=True),
         sa.Column("error", JSONB, nullable=True),
@@ -451,7 +505,12 @@ def upgrade() -> None:
         "node_execution_logs",
         sa.Column("log_id", sa.BigInteger, primary_key=True, autoincrement=True),
         sa.Column("tenant_id", PGUUID(as_uuid=True), nullable=False),
-        sa.Column("node_exec_id", PGUUID(as_uuid=True), sa.ForeignKey("node_executions.node_exec_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "node_exec_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("node_executions.node_exec_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("stream", sa.String(16), nullable=False),
         sa.Column("line", sa.Text, nullable=False),
         sa.Column("logged_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
@@ -466,8 +525,15 @@ def upgrade() -> None:
     op.create_table(
         "node_artifacts",
         sa.Column("artifact_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("node_exec_id", PGUUID(as_uuid=True), sa.ForeignKey("node_executions.node_exec_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
+        sa.Column(
+            "node_exec_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("node_executions.node_exec_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("artifact_type", sa.String(64), nullable=False),
         sa.Column("storage_path", sa.Text, nullable=False),
         sa.Column("size_bytes", sa.BigInteger, nullable=True),
@@ -490,7 +556,9 @@ def upgrade() -> None:
     op.create_table(
         "run_artifacts",
         sa.Column("artifact_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("run_id", PGUUID(as_uuid=True), sa.ForeignKey("runs.run_id", ondelete="CASCADE"), nullable=False),
         sa.Column("artifact_type", sa.String(64), nullable=False),
         sa.Column("storage_path", sa.Text, nullable=False),
@@ -530,8 +598,12 @@ def upgrade() -> None:
     # ---- 18. custom_nodes ----
     op.create_table(
         "custom_nodes",
-        sa.Column("custom_node_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "custom_node_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")
+        ),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("node_type", sa.String(128), nullable=False),
         sa.Column("name", sa.String(128), nullable=False),
         sa.Column("visibility", sa.String(32), nullable=False, server_default=sa.text("'private'")),
@@ -539,8 +611,12 @@ def upgrade() -> None:
         sa.Column("requirements", sa.Text, nullable=True),
         sa.Column("contract", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("approved_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("approved_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
-        sa.Column("created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "approved_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
+        sa.Column(
+            "created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
@@ -559,13 +635,20 @@ def upgrade() -> None:
     op.create_table(
         "custom_node_versions",
         sa.Column("version_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("custom_node_id", PGUUID(as_uuid=True), sa.ForeignKey("custom_nodes.custom_node_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "custom_node_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("custom_nodes.custom_node_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("version_number", sa.Integer, nullable=False),
         sa.Column("code", sa.Text, nullable=False),
         sa.Column("contract", JSONB, nullable=False),
         sa.Column("requirements", sa.Text, nullable=True),
         sa.Column("change_summary", sa.Text, nullable=True),
-        sa.Column("created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "created_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         comment="自定义节点版本历史",
@@ -581,13 +664,22 @@ def upgrade() -> None:
     op.create_table(
         "custom_node_test_runs",
         sa.Column("test_run_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("version_id", PGUUID(as_uuid=True), sa.ForeignKey("custom_node_versions.version_id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
+        sa.Column(
+            "version_id",
+            PGUUID(as_uuid=True),
+            sa.ForeignKey("custom_node_versions.version_id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("status", sa.String(32), nullable=False, server_default=sa.text("'queued'")),
         sa.Column("log", sa.Text, nullable=True),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("finished_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("triggered_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "triggered_by", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         comment="自定义节点测试运行",
@@ -600,7 +692,9 @@ def upgrade() -> None:
     op.create_table(
         "audit_events",
         sa.Column("event_id", PGUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column(
+            "tenant_id", PGUUID(as_uuid=True), sa.ForeignKey("tenants.tenant_id", ondelete="RESTRICT"), nullable=False
+        ),
         sa.Column("user_id", PGUUID(as_uuid=True), sa.ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True),
         sa.Column("action", sa.String(64), nullable=False),
         sa.Column("resource_type", sa.String(64), nullable=True),

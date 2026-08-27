@@ -11,6 +11,7 @@
 
 所有端点均需鉴权（``CurrentUserDep``）+ 租户隔离（``TenantDep``）。
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -18,7 +19,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
 from hscredit_studio.models import Template
@@ -49,7 +49,7 @@ class TemplateListItem(BaseModel):
     is_system: bool = Field(default=False, description="是否系统模板（tenant_id IS NULL）")
 
     @classmethod
-    def from_orm(cls, t: Template) -> "TemplateListItem":
+    def from_orm(cls, t: Template) -> TemplateListItem:
         return cls(
             id=t.template_id,
             name=t.name,
@@ -181,8 +181,7 @@ async def instantiate_template(
     status_code=status.HTTP_201_CREATED,
     summary="为模板评分",
     description=(
-        "提交或更新对模板的评分（1-5 整数），可附评论。"
-        "同一用户对同一模板限唯一评分；提交后自动重算模板平均分。"
+        "提交或更新对模板的评分（1-5 整数），可附评论。" "同一用户对同一模板限唯一评分；提交后自动重算模板平均分。"
     ),
 )
 async def rate_template(

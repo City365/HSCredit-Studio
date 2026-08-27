@@ -18,9 +18,10 @@
 - 评分：对同一用户对同一模板限唯一评分（unique 约束兜底），
   评分后重算 ``Template.rating_avg`` / ``rating_count``。
 """
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -39,7 +40,6 @@ from hscredit_studio.models import (
     WorkflowVersion,
 )
 from hscredit_studio.schemas.workflow import WorkflowDefinition
-
 
 # ===== 评分边界（与 ORM CheckConstraint "rating >= 1 AND rating <= 5" 对齐） =====
 
@@ -459,8 +459,7 @@ async def instantiate_template(
     # 创建工作流 + 初始版本 v1（与 workflow.create_workflow 等价）
     wf = Workflow(
         tenant_id=tenant_id,
-        name=workflow_name
-        or f"{tmpl.name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+        name=workflow_name or f"{tmpl.name}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
         description=f"从模板「{tmpl.name}」实例化",
         tags=tmpl.tags or [],
         created_by=user_id,
@@ -503,8 +502,7 @@ async def rate_template(
     """
     if not TemplateRatingAllowedValues.contains(rating):
         raise ValidationError(
-            f"评分必须在 {TemplateRatingAllowedValues.min}-"
-            f"{TemplateRatingAllowedValues.max} 之间"
+            f"评分必须在 {TemplateRatingAllowedValues.min}-" f"{TemplateRatingAllowedValues.max} 之间"
         )
 
     # 先校验模板存在并属于当前租户 / 系统
@@ -536,14 +534,10 @@ async def rate_template(
     tmpl = await session.get(Template, template_id)
     if tmpl is not None:
         avg = await session.scalar(
-            select(func.avg(TemplateRating.rating)).where(
-                TemplateRating.template_id == template_id
-            )
+            select(func.avg(TemplateRating.rating)).where(TemplateRating.template_id == template_id)
         )
         count = await session.scalar(
-            select(func.count(TemplateRating.rating_id)).where(
-                TemplateRating.template_id == template_id
-            )
+            select(func.count(TemplateRating.rating_id)).where(TemplateRating.template_id == template_id)
         )
         tmpl.rating_avg = float(avg) if avg is not None else 0.0
         tmpl.rating_count = count or 0
@@ -607,16 +601,16 @@ async def ensure_system_templates(session: AsyncSession) -> None:
 
 # 显式 re-export WorkflowDefinition 以便 API 层直接引用
 __all__ = [
-    "TemplateRatingAllowedValues",
-    "SCORECARD_TEMPLATE_V1",
-    "RULE_MINING_TEMPLATE_V1",
     "MONITOR_TEMPLATE_V1",
+    "RULE_MINING_TEMPLATE_V1",
+    "SCORECARD_TEMPLATE_V1",
     "SYSTEM_TEMPLATES",
-    "list_templates",
-    "get_template",
-    "get_latest_version",
-    "instantiate_template",
-    "rate_template",
-    "ensure_system_templates",
+    "TemplateRatingAllowedValues",
     "WorkflowDefinition",
+    "ensure_system_templates",
+    "get_latest_version",
+    "get_template",
+    "instantiate_template",
+    "list_templates",
+    "rate_template",
 ]

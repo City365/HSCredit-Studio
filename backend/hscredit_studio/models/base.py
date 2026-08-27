@@ -120,9 +120,7 @@ class ModelSerializerMixin:
                     result[rel_name] = None
                 elif isinstance(rel_value, list):
                     result[rel_name] = [
-                        item.to_dict(exclude=exclude, include_relationships=False)
-                        if hasattr(item, "to_dict")
-                        else item
+                        item.to_dict(exclude=exclude, include_relationships=False) if hasattr(item, "to_dict") else item
                         for item in rel_value
                     ]
                 elif hasattr(rel_value, "to_dict"):
@@ -158,8 +156,8 @@ def _serialize_value(value: Any) -> Any:
 
 __all__ = [
     "Base",
-    "TimestampMixin",
-    "TenantMixin",
-    "SoftDeleteMixin",
     "ModelSerializerMixin",
+    "SoftDeleteMixin",
+    "TenantMixin",
+    "TimestampMixin",
 ]

@@ -31,7 +31,7 @@ _HEADER = "X-Request-ID"
 class _nullcontext:
     """极简无操作上下文管理器（当 logger 不支持 contextualize 时使用）."""
 
-    def __enter__(self) -> "_nullcontext":
+    def __enter__(self) -> _nullcontext:
         return self
 
     def __exit__(
@@ -55,9 +55,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         # 兼容 stdlib logger（无 contextualize）
         cm: _nullcontext | object = (
-            _log.contextualize(request_id=request_id)
-            if hasattr(_log, "contextualize")
-            else _nullcontext()
+            _log.contextualize(request_id=request_id) if hasattr(_log, "contextualize") else _nullcontext()
         )
 
         with cm:
