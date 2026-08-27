@@ -17,6 +17,7 @@ from hscredit_studio.api.v1 import audit, auth, monitor, nodes, workflows, runs,
 from hscredit_studio.middleware.tenant import TenantMiddleware
 from hscredit_studio.middleware.security import SecurityHeadersMiddleware
 from hscredit_studio.middleware.request_id import RequestIDMiddleware
+from hscredit_studio.middleware.rate_limit import RateLimitMiddleware
 
 # 初始化日志
 setup_logging(settings.log_level)
@@ -51,6 +52,7 @@ register_exception_handlers(app)
 
 # 中间件（顺序：最后添加的最先执行）
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(RateLimitMiddleware)  # 速率限制 (越外层越先执行)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TenantMiddleware)
 app.add_middleware(RequestIDMiddleware)
