@@ -98,3 +98,5 @@ _e2e_report_assets/
 _b14_report.xlsx
 _b14_report_assets/
 _storage/
+# 本地备份目录 (跑 backup.sh 生成, 不入版本库)
+backups/
