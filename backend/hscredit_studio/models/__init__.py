@@ -30,6 +30,13 @@ from hscredit_studio.models.base import (
     TenantMixin,
     TimestampMixin,
 )
+from hscredit_studio.models.billing import (
+    BILL_STATUS_VALUES,
+    INVOICE_STATUS_VALUES,
+    PAYMENT_CHANNEL_VALUES,
+    Bill,
+    Invoice,
+)
 from hscredit_studio.models.node import (
     CUSTOM_NODE_TEST_RUN_STATUS_VALUES,
     VISIBILITY_VALUES,
@@ -78,12 +85,15 @@ from hscredit_studio.models.workflow import (
 )
 
 __all__ = [
+    "BILL_STATUS_VALUES",
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
+    "INVOICE_STATUS_VALUES",
     "LOG_STREAM_VALUES",
     "MEMBER_ROLE_VALUES",
     "MEMBER_STATUS_VALUES",
     "NODE_ARTIFACT_TYPE_VALUES",
     "NODE_STATUS_VALUES",
+    "PAYMENT_CHANNEL_VALUES",
     "PLAN_VALUES",
     "RUN_ARTIFACT_TYPE_VALUES",
     "RUN_STATUS_VALUES",
@@ -96,9 +106,11 @@ __all__ = [
     "AuditEvent",
     # base mixin
     "Base",
+    "Bill",
     "CustomNode",
     "CustomNodeTestRun",
     "CustomNodeVersion",
+    "Invoice",
     "ModelSerializerMixin",
     # 产物
     "NodeArtifact",

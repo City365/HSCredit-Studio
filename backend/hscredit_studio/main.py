@@ -10,7 +10,20 @@ from fastapi.responses import ORJSONResponse
 from prometheus_client import make_asgi_app
 
 from hscredit_studio.api.exception_handlers import register_exception_handlers
-from hscredit_studio.api.v1 import audit, auth, health, monitor, nodes, quota, runs, templates, usage, workflows, ws
+from hscredit_studio.api.v1 import (
+    audit,
+    auth,
+    billing,
+    health,
+    monitor,
+    nodes,
+    quota,
+    runs,
+    templates,
+    usage,
+    workflows,
+    ws,
+)
 from hscredit_studio.core.config import settings
 from hscredit_studio.core.logging import setup_logging
 from hscredit_studio.middleware.rate_limit import RateLimitMiddleware
@@ -80,6 +93,7 @@ app.include_router(audit.router, prefix="/api/v1/{tenant_slug}/audit-events", ta
 app.include_router(monitor.router, prefix="/api/v1/{tenant_slug}/monitor", tags=["监控"])
 app.include_router(usage.router, prefix="/api/v1/{tenant_slug}/usage", tags=["用量"])
 app.include_router(quota.router, prefix="/api/v1/{tenant_slug}/quota", tags=["配额"])
+app.include_router(billing.router, prefix="/api/v1/{tenant_slug}/bills", tags=["账单"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
 
