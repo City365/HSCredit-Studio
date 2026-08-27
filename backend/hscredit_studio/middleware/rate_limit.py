@@ -1,24 +1,22 @@
 """租户级速率限制中间件.
 
+Phase 2 批次 13 (基础限速) + Phase 3 批次 15 (Redis Lua 原子化 + 分级限流).
+
 策略:
-- 基于 Redis 滑动窗口 (sliding window log algorithm)
+- Redis 滑动窗口 log (sliding window log via sorted set, Lua 脚本原子执行)
 - 按 (tenant_slug, user_id) 维度独立计数
 - 超限返回 429 Too Many Requests + Retry-After 头
 - 公开路径 (/api/v1/auth/login, /api/v1/healthz, /metrics, /ws) 不受限
-
-Phase 2 批次 13 — 防止租户恶意刷接口,保护后端 + 数据库.
+- Phase 3 B15: 按 free/pro/enterprise 三档自动分配额度, 多副本共享 Redis 计数
 """
-
 from __future__ import annotations
 
-import time
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from hscredit_studio.core.config import settings
 from hscredit_studio.core.logging import get_logger
 
 _log = get_logger(__name__)
@@ -39,12 +37,13 @@ _PUBLIC_PATH_PREFIXES = (
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """基于 Redis 滑动窗口的租户级速率限制.
+    """基于 Redis Lua 滑动窗口的租户级速率限制 (Phase 3 B15).
 
-    算法: sliding window counter (精度 1 秒,无 burst)
-    - key: ``rl:{tenant_slug}:{user_id_or_ip}``
-    - value: 滑动窗口内的请求时间戳列表
-    - limit: settings.rate_limit_per_tenant (默认 100 / 60s)
+    算法: sliding window log via Redis sorted set, 全部 4 步操作在 1 个 Lua 脚本里完成,
+    保证多 worker / 多副本部署下计数一致。
+
+    分级: ``services.rate_limit.check_rate_limit`` 根据 ``Tenant.plan`` 取 ``free/pro/enterprise``
+    档位, 限额 60/300/1200 req / 60s。
     """
 
     async def dispatch(
@@ -76,73 +75,53 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # 也支持 IP 兜底
         client_ip = request.client.host if request.client else "unknown"
 
-        key = f"rl:{tenant_slug}:{user_id}"
-        limit = settings.rate_limit_per_tenant
-        window = settings.rate_limit_window_seconds
+        # Phase 3 B15: 调用 services.rate_limit.check_rate_limit (含 plan 查询 + Lua 原子执行)
+        from hscredit_studio.services.rate_limit import check_rate_limit
 
-        allowed, retry_after = await self._check(key, limit, window)
-        if not allowed:
+        result = await check_rate_limit(
+            tenant_slug=tenant_slug,
+            user_id=user_id,
+            client_ip=client_ip,
+        )
+
+        if not result.allowed:
             _log.warning(
                 "rate_limit_exceeded",
-                extra={"tenant": tenant_slug, "user": user_id, "ip": client_ip, "path": path},
+                extra={
+                    "tenant": tenant_slug,
+                    "user": user_id,
+                    "ip": client_ip,
+                    "path": path,
+                    "plan": result.plan,
+                    "limit": result.limit,
+                    "retry_after": result.retry_after_seconds,
+                },
             )
             resp = JSONResponse(
                 status_code=429,
                 content={
                     "code": "E_RATE_LIMITED",
-                    "message": f"超出速率限制 ({limit} 请求 / {window}s), 请稍后重试",
-                    "details": {"retry_after_seconds": retry_after},
+                    "message": (
+                        f"超出速率限制 (plan={result.plan}, "
+                        f"{result.limit} 请求 / 60s), 请稍后重试"
+                    ),
+                    "details": {"retry_after_seconds": result.retry_after_seconds},
                 },
             )
-            resp.headers["Retry-After"] = str(retry_after)
-            resp.headers["X-RateLimit-Limit"] = str(limit)
+            resp.headers["Retry-After"] = str(result.retry_after_seconds)
+            resp.headers["X-RateLimit-Limit"] = str(result.limit)
             resp.headers["X-RateLimit-Remaining"] = "0"
+            resp.headers["X-RateLimit-Plan"] = result.plan
             return resp
 
         response = await call_next(request)
         # 写入 rate limit 头 (供前端展示)
-        response.headers["X-RateLimit-Limit"] = str(limit)
+        response.headers["X-RateLimit-Limit"] = str(result.limit)
+        response.headers["X-RateLimit-Plan"] = result.plan
+        response.headers["X-RateLimit-Remaining"] = str(
+            max(0, result.limit - result.current_count)
+        )
         return response
-
-    async def _check(self, key: str, limit: int, window: int) -> tuple[bool, int]:
-        """检查是否超出限速,使用 Redis sorted set 实现滑动窗口.
-
-        Returns:
-            (allowed, retry_after_seconds)
-        """
-        try:
-            from hscredit_studio.services.cache import get_cache_client
-
-            client = await get_cache_client()
-            now = time.time()
-            cutoff = now - window
-
-            # 1. 删除窗口外的旧记录
-            await client.zremrangebyscore(key, 0, cutoff)
-            # 2. 计数当前窗口
-            count = await client.zcard(key)
-            if count >= limit:
-                # 计算最早一个时间戳, 距窗口起点多久
-                earliest = await client.zrange(key, 0, 0, withscores=True)
-                if earliest:
-                    ts = earliest[0][1]
-                    retry_after = max(1, int(window - (now - ts)) + 1)
-                else:
-                    retry_after = window
-                return False, retry_after
-
-            # 3. 记录当前请求 (member 必须唯一, 用时间戳+随机数避免冲突)
-            import secrets
-
-            member = f"{now}:{secrets.token_hex(4)}"
-            await client.zadd(key, {member: now})
-            # 4. 设置 key 过期 (比窗口稍长避免内存泄漏)
-            await client.expire(key, window + 60)
-            return True, 0
-        except Exception as e:
-            # Redis 失败时放行 (fail-open), 仅 WARN
-            _log.warning("rate_limit_check_failed", extra={"key": key, "error": str(e)[:200]})
-            return True, 0
 
 
 __all__ = ["RateLimitMiddleware"]
