@@ -95,3 +95,6 @@ Thumbs.db
 # E2E 测试产物（本地生成，CI 应重新构建）
 _e2e_report.xlsx
 _e2e_report_assets/
+_b14_report.xlsx
+_b14_report_assets/
+_storage/

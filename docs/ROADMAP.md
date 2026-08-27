@@ -161,6 +161,20 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 **依赖**：无  
 **风险**：低，纯数值修复。
 
+**实测修订** (2026-08-27)：CLAUDE.md 描述的 12 个失败属于 **hscredit 主仓库**，不在本 platform 子项目。本 platform 自身有 **15 个单元测试失败**（4 类根因），B0.3 已全部修复：`59/59 单元测试全过`（`98821db`）。hscredit 主仓库的 numpy 修复归入其自身的路线图，不计入本 platform 进度。
+
+---
+
+### ✅ Phase 1.5 完工验收 (2026-08-27)
+
+| 批次 | Commit | 关键指标 |
+|------|--------|----------|
+| B0.1 工具链 | `904aee1` | ruff 错误 1984 → 0；black 95 文件格式化；F821 真 bug 修复 |
+| B0.2 静默 except | `9b65450` | 8 处裸吞错加日志；1 处收窄到具体异常 |
+| B0.3 测试修复 | `98821db` | 单元测试 44 passed → 59 passed；2 真 bug 修复 |
+
+`make backend-lint` 退出码 0；`pytest hscredit_studio/tests/unit/` 59 passed。
+
 ---
 
 ## 4. Phase 3 — 节点沙箱化

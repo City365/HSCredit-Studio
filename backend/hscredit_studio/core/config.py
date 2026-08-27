@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = 7
 
     # ===== 沙箱（Phase 3 启用）=====
+    # sandbox_backend: subprocess（默认，本地开发）| docker | kubernetes
+    sandbox_backend: str = "subprocess"
+    # 关闭后回退到进程内执行 (Phase 3 B14 默认 True, 后续生产可关)
+    sandbox_enabled: bool = True
     sandbox_image: str = "hscredit-sandbox:latest"
     sandbox_timeout_sec: int = 300
     sandbox_memory_limit: str = "4g"

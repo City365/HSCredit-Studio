@@ -200,10 +200,18 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 )
                 return {"status": "cached"}
 
-            # 3. 执行
+            # 3. 执行 (Phase 3 B14: 通过沙箱执行, 默认 subprocess 后端)
+            from hscredit_studio.services.sandbox import (
+                SandboxError,
+                SandboxOOMError,
+                SandboxTimeoutError,
+                get_sandbox_backend,
+            )
+
+            sandbox = get_sandbox_backend()
             node_instance.validate_inputs(inputs)
             node_instance.validate_params(params)
-            outputs = node_instance.run(inputs, params)
+            outputs = await sandbox.execute(ne.node_type, inputs, params)
 
             # 4. 产物落盘（统一在 executor 层序列化 + 上传 + 写 NodeArtifact）
             artifact_paths, output_hash = await _save_outputs(
@@ -272,6 +280,96 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
                 stream="stderr",
                 level="error",
                 message=f"{ne.node_type} 业务错误: {e.code} - {e}",
+            )
+            return {"status": "failed", "error": error_info}
+
+        except SandboxTimeoutError as e:
+            # Phase 3 B14: 沙箱超时, 标记特定 code 便于监控告警
+            from hscredit_studio.core.config import settings as _sandbox_settings
+
+            error_info = {
+                "code": "SANDBOX_TIMEOUT",
+                "message": str(e),
+                "details": {
+                    "node_type": ne.node_type,
+                    "timeout_sec": _sandbox_settings.sandbox_timeout_sec,
+                },
+            }
+            await RunCoordinator.handle_node_failure(
+                node_exec_id,
+                error_info,
+                retry=node_cls.contract.retryable,
+            )
+            _log.warning(
+                "sandbox_timeout",
+                node_exec_id=str(node_exec_id),
+                node_type=ne.node_type,
+            )
+            await publish_event(
+                ne.run_id,
+                "log",
+                node_id=ne.node_id,
+                stream="stderr",
+                level="error",
+                message=f"{ne.node_type} 沙箱执行超时: {e}",
+            )
+            return {"status": "failed", "error": error_info}
+
+        except SandboxOOMError as e:
+            from hscredit_studio.core.config import settings as _sandbox_settings
+
+            error_info = {
+                "code": "SANDBOX_OOM",
+                "message": str(e),
+                "details": {
+                    "node_type": ne.node_type,
+                    "memory_limit": _sandbox_settings.sandbox_memory_limit,
+                },
+            }
+            await RunCoordinator.handle_node_failure(
+                node_exec_id,
+                error_info,
+                retry=node_cls.contract.retryable,
+            )
+            _log.warning(
+                "sandbox_oom",
+                node_exec_id=str(node_exec_id),
+                node_type=ne.node_type,
+            )
+            await publish_event(
+                ne.run_id,
+                "log",
+                node_id=ne.node_id,
+                stream="stderr",
+                level="error",
+                message=f"{ne.node_type} 沙箱 OOM: {e}",
+            )
+            return {"status": "failed", "error": error_info}
+
+        except SandboxError as e:
+            error_info = {
+                "code": "E_SANDBOX_EXECUTION",
+                "message": str(e),
+                "traceback": traceback.format_exc()[:2000],
+            }
+            await RunCoordinator.handle_node_failure(
+                node_exec_id,
+                error_info,
+                retry=node_cls.contract.retryable,
+            )
+            _log.error(
+                "sandbox_execution_failed",
+                node_exec_id=str(node_exec_id),
+                node_type=ne.node_type,
+                error=str(e),
+            )
+            await publish_event(
+                ne.run_id,
+                "log",
+                node_id=ne.node_id,
+                stream="stderr",
+                level="error",
+                message=f"{ne.node_type} 沙箱执行错误: {e}",
             )
             return {"status": "failed", "error": error_info}
 
