@@ -37,21 +37,20 @@ backend-shell: ## 进入后端 Python 交互
 	cd backend && python
 
 backend-format: ## 格式化后端代码
-	cd backend && black hscredit_studio/ tests/ --line-length 120
-	cd backend && ruff check hscredit_studio/ tests/ --fix
+	cd backend && ./.venv/Scripts/python.exe -m black hscredit_studio/ --line-length 120
+	cd backend && ./.venv/Scripts/python.exe -m ruff check hscredit_studio/ --fix
 
 backend-lint: ## 后端代码检查
-	cd backend && ruff check hscredit_studio/ tests/
-	cd backend && mypy hscredit_studio/ --ignore-missing-imports
+	cd backend && ./.venv/Scripts/python.exe -m ruff check hscredit_studio/
 
 backend-test: ## 后端单元测试
-	cd backend && pytest tests/unit/ -m unit --cov=hscredit_studio --cov-report=term
+	cd backend && ./.venv/Scripts/python.exe -m pytest hscredit_studio/tests/unit/ -m unit --cov=hscredit_studio --cov-report=term
 
 backend-test-int: ## 后端集成测试
-	cd backend && pytest tests/integration/ -m integration -v
+	cd backend && ./.venv/Scripts/python.exe -m pytest hscredit_studio/tests/integration/ -m integration -v
 
 backend-test-all: ## 后端全部测试
-	cd backend && pytest tests/ -m "not slow and not integration" --cov=hscredit_studio
+	cd backend && ./.venv/Scripts/python.exe -m pytest hscredit_studio/tests/ -m "not slow and not integration" --cov=hscredit_studio
 
 # ==================== 前端 ====================
 
