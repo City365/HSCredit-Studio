@@ -69,8 +69,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 payload = decode_token(auth.removeprefix("Bearer "))
                 if "sub" in payload:
                     user_id = payload["sub"]
-            except Exception:
-                pass
+            except Exception as e:
+                # JWT 无效时降级为 anon，避免阻塞正常流量；异常计入 debug 日志
+                _log.debug("rate_limit_jwt_decode_failed", error=str(e))
 
         # 也支持 IP 兜底
         client_ip = request.client.host if request.client else "unknown"

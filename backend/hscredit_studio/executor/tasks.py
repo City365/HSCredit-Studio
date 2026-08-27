@@ -93,8 +93,9 @@ def run_node(self, node_exec_id: str) -> dict[str, Any]:
             loop = asyncio.new_event_loop()
             loop.run_until_complete(close_cache_client())
             loop.close()
-        except Exception:
-            pass
+        except Exception as e:
+            # 关闭失败不影响任务主流程（连接池随进程退出释放）
+            _log.debug("cache_close_skipped", error=str(e))
 
 
 async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:

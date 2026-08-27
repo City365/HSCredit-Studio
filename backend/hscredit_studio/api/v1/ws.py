@@ -149,7 +149,8 @@ async def run_status_ws(
             except WebSocketDisconnect:
                 _log.info("ws_client_disconnected", run_id=str(run_id))
                 break
-            except Exception:
+            except Exception as e:
+                _log.debug("ws_recv_unexpected", run_id=str(run_id), error=str(e))
                 break
 
             # keep-alive（防止 idle 连接被中间设备关闭）
@@ -157,7 +158,8 @@ async def run_status_ws(
                 try:
                     await websocket.send_json(_build_event("ping", str(run_id), ts=now))
                     last_keepalive = now
-                except Exception:
+                except Exception as e:
+                    _log.debug("ws_keepalive_failed", run_id=str(run_id), error=str(e))
                     break
 
     except WebSocketDisconnect:
@@ -166,11 +168,9 @@ async def run_status_ws(
         _log.exception("ws_unexpected_error", run_id=str(run_id), error=str(e))
     finally:
         if pubsub is not None:
-            try:
+            with contextlib.suppress(Exception):
                 await pubsub.unsubscribe()
                 await pubsub.close()
-            except Exception:
-                pass
         with contextlib.suppress(Exception):
             await redis_client.close()
         with contextlib.suppress(Exception):

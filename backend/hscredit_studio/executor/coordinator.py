@@ -362,7 +362,9 @@ def _calc_duration(start: datetime | None, end: datetime | None) -> int | None:
         start_ts = start.timestamp() if start.tzinfo is not None else _naive_to_utc_ts(start)
         end_ts = end.timestamp() if end.tzinfo is not None else _naive_to_utc_ts(end)
         return int(end_ts - start_ts)
-    except Exception:
+    except (ValueError, OverflowError, OSError) as e:
+        # 时间戳转换失败（极值日期 / 平台不支持的 timezone）— 不阻塞 Run 流程
+        _log.debug("duration_calc_failed", start=str(start), end=str(end), error=str(e))
         return None
 
 

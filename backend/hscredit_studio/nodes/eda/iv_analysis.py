@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import numpy as np
@@ -90,7 +91,12 @@ class _HsIvAdapter:
                 return float(result["IV值"])
             if isinstance(result, (tuple, list)) and len(result) >= 1:
                 return float(result[0])
-        except Exception:
+        except Exception as e:
+            # 走本地降级实现 — 记录原因供 EDA 报告展示
+            logging.getLogger(__name__).warning(
+                "iv_hscredit_adapter_failed, fallback to local iv",
+                extra={"feature": feature, "error": str(e)},
+            )
             return _fallback_iv(df[feature], df[target], max_n_bins=max_n_bins)
         return None
 
