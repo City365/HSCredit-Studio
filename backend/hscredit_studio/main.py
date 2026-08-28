@@ -15,6 +15,7 @@ from hscredit_studio.api.v1 import (
     auth,
     billing,
     contracts,
+    data_classification,
     health,
     monitor,
     nodes,
@@ -98,6 +99,7 @@ app.include_router(quota.router, prefix="/api/v1/{tenant_slug}/quota", tags=["�
 app.include_router(billing.router, prefix="/api/v1/{tenant_slug}/bills", tags=["账单"])
 app.include_router(contracts.router, prefix="/api/v1/{tenant_slug}/contracts", tags=["合同"])
 app.include_router(notifications.router, prefix="/api/v1/{tenant_slug}/notifications", tags=["通知"])
+app.include_router(data_classification.router, prefix="/api/v1/{tenant_slug}/data-classification", tags=["数据脱敏"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
 

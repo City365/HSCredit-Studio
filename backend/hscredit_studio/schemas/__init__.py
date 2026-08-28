@@ -36,6 +36,12 @@ from hscredit_studio.schemas.common import (
     SuccessResponse,
     TimestampedSchema,
 )
+from hscredit_studio.schemas.data_classification import (
+    FieldClassificationInfo,
+    MaskResult,
+    RedactRequest,
+    RedactResponse,
+)
 
 # ----- 节点契约 -----
 from hscredit_studio.schemas.node_contract import (
@@ -110,11 +116,14 @@ __all__ = [
     "EdgeDef",
     "ErrorDetail",
     "ErrorResponse",
+    # 数据脱敏 (Phase 5 B24)
+    "FieldClassificationInfo",
     "IDSchema",
     # auth
     "LoginRequest",
     "LoginResponse",
     "LogoutRequest",
+    "MaskResult",
     "NodeCategory",
     "NodeContract",
     "NodeDef",
@@ -137,6 +146,8 @@ __all__ = [
     "ParamType",
     "PortSchema",
     "PortType",
+    "RedactRequest",
+    "RedactResponse",
     "RefreshRequest",
     "RefreshResponse",
     "RunCancelResponse",
