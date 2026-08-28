@@ -49,6 +49,14 @@ from hscredit_studio.models.node import (
     NodeDefinition,
     NodeResourceUsage,
 )
+
+# 通知 (Phase 5 B23)
+from hscredit_studio.models.notification import (
+    NOTIFICATION_CHANNEL_VALUES,
+    NOTIFICATION_STATUS_VALUES,
+    NotificationConfig,
+    NotificationLog,
+)
 from hscredit_studio.models.run import (
     LOG_STREAM_VALUES,
     NODE_STATUS_VALUES,
@@ -98,6 +106,8 @@ __all__ = [
     "MEMBER_STATUS_VALUES",
     "NODE_ARTIFACT_TYPE_VALUES",
     "NODE_STATUS_VALUES",
+    "NOTIFICATION_CHANNEL_VALUES",
+    "NOTIFICATION_STATUS_VALUES",
     "PAYMENT_CHANNEL_VALUES",
     "PLAN_VALUES",
     "RUN_ARTIFACT_TYPE_VALUES",
@@ -125,6 +135,9 @@ __all__ = [
     "NodeExecution",
     "NodeExecutionLog",
     "NodeResourceUsage",
+    # 通知 (Phase 5 B23)
+    "NotificationConfig",
+    "NotificationLog",
     # 执行
     "Run",
     "RunArtifact",

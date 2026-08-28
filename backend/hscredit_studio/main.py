@@ -18,6 +18,7 @@ from hscredit_studio.api.v1 import (
     health,
     monitor,
     nodes,
+    notifications,
     quota,
     runs,
     templates,
@@ -96,6 +97,7 @@ app.include_router(usage.router, prefix="/api/v1/{tenant_slug}/usage", tags=["�
 app.include_router(quota.router, prefix="/api/v1/{tenant_slug}/quota", tags=["配额"])
 app.include_router(billing.router, prefix="/api/v1/{tenant_slug}/bills", tags=["账单"])
 app.include_router(contracts.router, prefix="/api/v1/{tenant_slug}/contracts", tags=["合同"])
+app.include_router(notifications.router, prefix="/api/v1/{tenant_slug}/notifications", tags=["通知"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
 
