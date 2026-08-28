@@ -49,6 +49,12 @@ DEMO_TENANTS = [
                 "password": "DemoPass123!",
                 "role": "analyst",
             },
+            {
+                "email": "viewer@demo.com",
+                "display_name": "Demo Viewer",
+                "password": "DemoPass123!",
+                "role": "viewer",
+            },
         ],
     },
     {

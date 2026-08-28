@@ -6,3 +6,7 @@ service 层负责组合 ORM 模型、JWT、事务与业务规则，
 """
 
 from __future__ import annotations
+
+from hscredit_studio.services import rbac as _rbac
+
+__all__ = ["_rbac"]

@@ -28,8 +28,6 @@ from hscredit_studio.schemas.alert import (
     AlertSilenceResponse,
     PrometheusRulesResponse,
 )
-
-# ----- 认证 -----
 from hscredit_studio.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -90,6 +88,19 @@ from hscredit_studio.schemas.pipl import (
     DsrSubmitResponse,
     PrivacyPolicyResponse,
     UserDataPackageResponse,
+)
+
+# ----- RBAC (Phase 6 B28) -----
+from hscredit_studio.schemas.rbac import (
+    MenuResponse,
+    PermissionCheckRequest,
+    PermissionCheckResponse,
+    PermissionMatrixResponse,
+    RoleAuditItem,
+    RoleAuditListResponse,
+    RoleInfo,
+    RolePolicyCreate,
+    RolePolicyResponse,
 )
 
 # ----- Run / 节点执行 / 产物 -----
@@ -208,6 +219,7 @@ __all__ = [
     "LoginResponse",
     "LogoutRequest",
     "MaskResult",
+    "MenuResponse",
     "NodeCategory",
     "NodeContract",
     "NodeDef",
@@ -229,6 +241,9 @@ __all__ = [
     "ParamSpec",
     "ParamType",
     "PasswordCheckResponse",
+    "PermissionCheckRequest",
+    "PermissionCheckResponse",
+    "PermissionMatrixResponse",
     "PortSchema",
     "PortType",
     "PrivacyPolicyResponse",
@@ -237,6 +252,11 @@ __all__ = [
     "RedactResponse",
     "RefreshRequest",
     "RefreshResponse",
+    "RoleAuditItem",
+    "RoleAuditListResponse",
+    "RoleInfo",
+    "RolePolicyCreate",
+    "RolePolicyResponse",
     "RunCancelResponse",
     "RunListItem",
     "RunMetricsResponse",

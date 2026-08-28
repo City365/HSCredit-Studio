@@ -79,6 +79,12 @@ from hscredit_studio.models.pipl import (
     DataSubjectRequest,
     PrivacyPolicyVersion,
 )
+
+# RBAC 角色权限 (Phase 6 B28)
+from hscredit_studio.models.rbac import (
+    RolePolicy,
+    UserRoleAudit,
+)
 from hscredit_studio.models.run import (
     LOG_STREAM_VALUES,
     NODE_STATUS_VALUES,
@@ -196,6 +202,8 @@ __all__ = [
     "NotificationConfig",
     "NotificationLog",
     "PrivacyPolicyVersion",  # Phase 5 B26
+    # RBAC (Phase 6 B28)
+    "RolePolicy",
     # 执行
     "Run",
     "RunArtifact",
@@ -212,6 +220,8 @@ __all__ = [
     # 用户
     "User",
     "UserInvitation",
+    # RBAC 角色变更审计 (Phase 6 B28)
+    "UserRoleAudit",
     # 安全加固 (Phase 5 B25)
     "Vulnerability",
     # 工作流

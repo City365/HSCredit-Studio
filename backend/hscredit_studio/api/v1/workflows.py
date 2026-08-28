@@ -8,11 +8,12 @@
 
 from __future__ import annotations
 
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
-from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep
+from hscredit_studio.api.deps import CurrentUserDep, SessionDep, TenantDep, require_permission
 from hscredit_studio.schemas.common import PaginatedResponse
 from hscredit_studio.schemas.run import RunResponse, RunSubmitRequest
 from hscredit_studio.schemas.workflow import (
@@ -27,6 +28,7 @@ from hscredit_studio.schemas.workflow import (
 )
 from hscredit_studio.services import run as run_service
 from hscredit_studio.services import workflow as wf_service
+from hscredit_studio.services.rbac import Action, Resource
 
 router = APIRouter(tags=["工作流"])
 
@@ -85,7 +87,7 @@ async def create_workflow(
     req: WorkflowCreate,
     session: SessionDep,
     tenant_id: TenantDep,
-    user: CurrentUserDep,
+    user: Annotated[dict, Depends(require_permission(Resource.WORKFLOW, Action.WRITE))],
 ) -> WorkflowResponse:
     # JWT payload 中 user_id 存放在 ``sub`` claim
     user_id = UUID(user["sub"])

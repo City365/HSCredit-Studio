@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, text
+from sqlalchemy import Boolean, String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -70,6 +70,12 @@ class User(Base, TimestampMixin, SoftDeleteMixin, ModelSerializerMixin):
         nullable=True,
         server_default=text("'zh-CN'"),
         comment="用户偏好语言（如 zh-CN / en-US）",
+    )
+    is_super_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+        comment="平台超管标记（跨租户访问，B28 起生效）",
     )
 
 
