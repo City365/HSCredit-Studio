@@ -43,6 +43,9 @@ TEMPLATE_VISIBILITY_VALUES = ("private", "tenant", "public")
 所有 tenant_id IS NULL 的行视为 ``official``；业务代码会跳过此值。
 """
 
+TEMPLATE_REVIEW_STATUS_VALUES = ("draft", "pending", "approved", "rejected")
+"""Template.review_status 审核状态 (Phase 6 B31)."""
+
 
 class Template(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializerMixin):
     """模板主表.
@@ -103,6 +106,27 @@ class Template(Base, TimestampMixin, SoftDeleteMixin, TenantMixin, ModelSerializ
         PGUUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
+    )
+    # Phase 6 B31: 自定义模板共享字段
+    review_status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        server_default=text("'draft'"),
+        comment=f"审核状态: {TEMPLATE_REVIEW_STATUS_VALUES}",
+    )
+    rejection_reason: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="审核拒绝原因"
+    )
+    shared_with_tenants: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+        comment="跨租户白名单 (tenant_id 数组)",
+    )
+    source_workflow_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        nullable=True,
+        comment="来源 workflow_id (从工作流发布时填充)",
     )
 
     # 关系

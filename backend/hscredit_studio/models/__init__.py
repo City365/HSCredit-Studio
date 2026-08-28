@@ -107,10 +107,16 @@ from hscredit_studio.models.security import (
     Vulnerability,
 )
 from hscredit_studio.models.template import (
+    TEMPLATE_REVIEW_STATUS_VALUES,
     TEMPLATE_VISIBILITY_VALUES,
     Template,
     TemplateRating,
     TemplateVersion,
+)
+
+# 模板审核 (Phase 6 B31)
+from hscredit_studio.models.template_review import (
+    TemplateReviewLog,
 )
 from hscredit_studio.models.tenant import (
     MEMBER_ROLE_VALUES,
@@ -163,6 +169,7 @@ __all__ = [
     "PLAN_VALUES",
     "RUN_ARTIFACT_TYPE_VALUES",
     "RUN_STATUS_VALUES",
+    "TEMPLATE_REVIEW_STATUS_VALUES",  # Phase 6 B31
     "TEMPLATE_VISIBILITY_VALUES",
     "TENANT_STATUS_VALUES",
     "USER_STATUS_VALUES",
@@ -211,6 +218,7 @@ __all__ = [
     # 模板
     "Template",
     "TemplateRating",
+    "TemplateReviewLog",  # Phase 6 B31
     "TemplateVersion",
     # 租户
     "Tenant",

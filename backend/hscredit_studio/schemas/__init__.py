@@ -167,13 +167,21 @@ from hscredit_studio.schemas.security import (
     VulnerabilityStats,
     VulnerabilityUpdate,
 )
+
+# ----- 模板共享 (Phase 6 B31) -----
+from hscredit_studio.schemas.template_sharing import (
+    CrossTenantShareRequest,
+    PublishedTemplateResponse,
+    PublishWorkflowRequest,
+    ReviewDecisionRequest,
+    TemplateReviewLogItem,
+    TemplateReviewLogList,
+)
 from hscredit_studio.schemas.usage import (
     DimensionUsage,
     NodeTypeUsage,
     TenantUsageResponse,
 )
-
-# ----- 工作流 -----
 from hscredit_studio.schemas.workflow import (
     EdgeDef,
     NodeDef,
@@ -220,6 +228,7 @@ __all__ = [
     "CrossBorderApproveRequest",
     "CrossBorderRequestSchema",
     "CrossBorderResponse",
+    "CrossTenantShareRequest",  # Phase 6 B31
     # 用量 (Phase 4 B18)
     "DimensionUsage",
     "DsrListItem",
@@ -282,10 +291,13 @@ __all__ = [
     "PortType",
     "PrivacyPolicyResponse",
     "PrometheusRulesResponse",
+    "PublishWorkflowRequest",  # Phase 6 B31
+    "PublishedTemplateResponse",  # Phase 6 B31
     "RedactRequest",
     "RedactResponse",
     "RefreshRequest",
     "RefreshResponse",
+    "ReviewDecisionRequest",  # Phase 6 B31
     "RoleAuditItem",
     "RoleAuditListResponse",
     "RoleChangeRequest",
@@ -303,6 +315,8 @@ __all__ = [
     "SiemExportRequest",
     "SiemExportResponse",
     "SuccessResponse",
+    "TemplateReviewLogItem",  # Phase 6 B31
+    "TemplateReviewLogList",  # Phase 6 B31
     "TenantAuditEventInfo",
     "TenantDetailResponse",
     "TenantListItem",

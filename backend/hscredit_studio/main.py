@@ -28,6 +28,7 @@ from hscredit_studio.api.v1 import (
     rbac,
     runs,
     security,
+    template_sharing,
     templates,
     usage,
     workflows,
@@ -115,6 +116,11 @@ app.include_router(
     industry_templates.router,
     prefix="/api/v1/{tenant_slug}/industry-templates",
     tags=["行业模板"],
+)
+app.include_router(
+    template_sharing.router,
+    prefix="/api/v1/{tenant_slug}/template-sharing",
+    tags=["模板共享"],
 )
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
