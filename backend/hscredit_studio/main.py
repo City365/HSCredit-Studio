@@ -15,6 +15,7 @@ from hscredit_studio.api.v1 import (
     alerts,
     audit,
     auth,
+    bi_export,
     billing,
     contracts,
     data_classification,
@@ -121,6 +122,11 @@ app.include_router(
     template_sharing.router,
     prefix="/api/v1/{tenant_slug}/template-sharing",
     tags=["模板共享"],
+)
+app.include_router(
+    bi_export.router,
+    prefix="/api/v1/{tenant_slug}/bi-exports",
+    tags=["BI 报表"],
 )
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 

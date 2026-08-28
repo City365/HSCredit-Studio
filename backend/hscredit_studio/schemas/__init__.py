@@ -56,6 +56,23 @@ from hscredit_studio.schemas.auth import (
     TokenPair,
     UserInfo,
 )
+from hscredit_studio.schemas.bi_export import (
+    BIDatasetInfo,
+    BIDatasetKey,
+    BIDatasetListResponse,
+    BIExportFormat,
+    BIExportRequest,
+    BIExportResponse,
+    BIViewInfo,
+    BIViewListResponse,
+    ConnectorTestResponse,
+    FineBITableInfo,
+    FineBITemplateResponse,
+    PowerBIQueryInfo,
+    PowerBITemplateResponse,
+    TableauConnectionInfo,
+    TableauTemplateResponse,
+)
 from hscredit_studio.schemas.common import (
     BaseSchema,
     ErrorDetail,
@@ -215,6 +232,15 @@ __all__ = [
     "ArtifactListResponse",
     "ArtifactResponse",
     "ArtifactType",
+    # BI 报表 (Phase 7 B33)
+    "BIDatasetInfo",
+    "BIDatasetKey",
+    "BIDatasetListResponse",
+    "BIExportFormat",
+    "BIExportRequest",
+    "BIExportResponse",
+    "BIViewInfo",
+    "BIViewListResponse",
     # common
     "BaseSchema",
     # node_contract
@@ -222,6 +248,7 @@ __all__ = [
     "CacheStrategy",
     # 安全加固 (Phase 5 B25)
     "ChainCheckResponse",
+    "ConnectorTestResponse",
     "ConsentGrantRequest",
     "ConsentRevokeRequest",
     "ConsentStateResponse",
@@ -241,6 +268,8 @@ __all__ = [
     "ErrorResponse",
     # 数据脱敏 (Phase 5 B24)
     "FieldClassificationInfo",
+    "FineBITableInfo",
+    "FineBITemplateResponse",
     "GlobalOverviewResponse",  # Phase 6 B29
     "IDSchema",
     "IndustryTemplateDetail",
@@ -289,6 +318,8 @@ __all__ = [
     "PermissionMatrixResponse",
     "PortSchema",
     "PortType",
+    "PowerBIQueryInfo",
+    "PowerBITemplateResponse",
     "PrivacyPolicyResponse",
     "PrometheusRulesResponse",
     "PublishWorkflowRequest",  # Phase 6 B31
@@ -315,6 +346,8 @@ __all__ = [
     "SiemExportRequest",
     "SiemExportResponse",
     "SuccessResponse",
+    "TableauConnectionInfo",
+    "TableauTemplateResponse",
     "TemplateReviewLogItem",  # Phase 6 B31
     "TemplateReviewLogList",  # Phase 6 B31
     "TenantAuditEventInfo",
