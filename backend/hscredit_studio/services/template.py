@@ -40,6 +40,7 @@ from hscredit_studio.models import (
     WorkflowVersion,
 )
 from hscredit_studio.schemas.workflow import WorkflowDefinition
+from hscredit_studio.services.industry_templates import INDUSTRY_TEMPLATES
 
 # ===== 评分边界（与 ORM CheckConstraint "rating >= 1 AND rating <= 5" 对齐） =====
 
@@ -275,6 +276,7 @@ SYSTEM_TEMPLATES: list[dict[str, Any]] = [
     SCORECARD_TEMPLATE_V1,
     RULE_MINING_TEMPLATE_V1,
     MONITOR_TEMPLATE_V1,
+    *INDUSTRY_TEMPLATES,  # Phase 6 B30 — 6 个行业模板
 ]
 
 
@@ -580,7 +582,7 @@ async def ensure_system_templates(session: AsyncSession) -> None:
             rating_avg=0.0,
             rating_count=0,
             icon=tmpl_def.get("icon"),
-            tags=tmpl_def["tags"],
+            tags=_merged_tags(tmpl_def),
             created_by=None,
         )
         session.add(tmpl)
@@ -591,7 +593,15 @@ async def ensure_system_templates(session: AsyncSession) -> None:
             version_number=1,
             nodes=tmpl_def["nodes"],
             edges=tmpl_def["edges"],
-            default_params={},
+            default_params={
+                # Phase 6 B30: 行业模板元数据写入 default_params
+                "target_column": tmpl_def.get("target_column", "FPD"),
+                "recommended_features": tmpl_def.get("recommended_features", []),
+                "model_type": tmpl_def.get("model_type", ""),
+                "score_formula": tmpl_def.get("score_formula", ""),
+                "report_template": tmpl_def.get("report_template", ""),
+                "default_dataset": tmpl_def.get("default_dataset", "examples/hscredit_yyp.xlsx"),
+            },
             readme_md=f"# {tmpl_def['name']}\n\n{tmpl_def['description']}\n",
         )
         session.add(v1)
@@ -600,6 +610,21 @@ async def ensure_system_templates(session: AsyncSession) -> None:
 
 
 # 显式 re-export WorkflowDefinition 以便 API 层直接引用
+
+
+def _merged_tags(tmpl_def: dict[str, Any]) -> list[str]:
+    """合并模板 tags 与 industry (Phase 6 B30 模板市场查找).
+
+    行业模板的 ``industry`` 字段 (e.g. "银行信用卡") 必须出现在 ``tags`` 中,
+    以便 :func:`list_industry_templates` 按 ``tags.contains([industry])`` 过滤.
+    """
+    base_tags = list(tmpl_def.get("tags", []) or [])
+    industry = tmpl_def.get("industry")
+    if industry and industry not in base_tags:
+        base_tags = [industry, *base_tags]
+    return base_tags
+
+
 __all__ = [
     "MONITOR_TEMPLATE_V1",
     "RULE_MINING_TEMPLATE_V1",

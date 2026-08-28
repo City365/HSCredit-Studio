@@ -73,6 +73,17 @@ from hscredit_studio.schemas.data_classification import (
     RedactResponse,
 )
 
+# ----- 行业模板 (Phase 6 B30) -----
+from hscredit_studio.schemas.industry_templates import (
+    IndustryTemplateDetail,
+    IndustryTemplateInstantiateRequest,
+    IndustryTemplateInstantiateResponse,
+    IndustryTemplateListResponse,
+    IndustryTemplateRatingCreate,
+    IndustryTemplateRatingResponse,
+    IndustryTemplateSummary,
+)
+
 # ----- 节点契约 -----
 from hscredit_studio.schemas.node_contract import (
     CacheConfig,
@@ -106,8 +117,6 @@ from hscredit_studio.schemas.pipl import (
     PrivacyPolicyResponse,
     UserDataPackageResponse,
 )
-
-# ----- RBAC (Phase 6 B28) -----
 from hscredit_studio.schemas.rbac import (
     MenuResponse,
     PermissionCheckRequest,
@@ -225,6 +234,13 @@ __all__ = [
     "FieldClassificationInfo",
     "GlobalOverviewResponse",  # Phase 6 B29
     "IDSchema",
+    "IndustryTemplateDetail",
+    "IndustryTemplateInstantiateRequest",
+    "IndustryTemplateInstantiateResponse",
+    "IndustryTemplateListResponse",
+    "IndustryTemplateRatingCreate",
+    "IndustryTemplateRatingResponse",
+    "IndustryTemplateSummary",
     "IntrusionCheckRequest",
     "IntrusionCheckResponse",
     "IpAccessRuleCreate",
