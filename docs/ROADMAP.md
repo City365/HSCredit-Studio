@@ -567,6 +567,76 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 
 ---
 
+## 8.5 Phase 8 — 通用 Webhook 投递系统
+
+**目标**：让租户可订阅平台事件并接收 HMAC 签名的 HTTP POST 回调, 形成平台→租户系统的可验证集成链路。
+
+**依据**：
+- B23 通知是平台→运维 (Slack/WeCom/SMTP), 不覆盖租户自建系统
+- B27 Alertmanager 是入站 webhook (告警推送至平台), 不对称
+- 客户希望事件触发业务流 (如 Run 完成后触发内部审批), 需要出站 webhook
+- 安全要求: HMAC 签名防伪造, 5 分钟时间窗防重放
+
+**批次拆分**：
+
+### B35 — 通用 Webhook 投递系统
+**范围**:
+- 租户可订阅 13 类事件 (workflow / run / alert / bill / template)
+- 每订阅独立 32 字节 HMAC 密钥
+- HTTP POST 投递 + 自定义 HTTP 头 (X-HSCredit-Event/Delivery-Id/Timestamp/Signature)
+- 失败重试: 指数退避 1min / 5min / 30min / 2h / 12h (5 次)
+- 投递日志表 (status + 响应 + 错误)
+- 手动重试 API + 签名验证调试工具
+- 与 B23 通知 (平台→用户) + B27 Alertmanager (入站) 形成完整 webhook 矩阵
+
+**验收 (e2e)**:
+- 创建订阅 → 返回 64 字符 secret
+- 列表/详情/更新/删除订阅
+- 签名验证工具: 正确签名 → valid=true, 错误签名 → valid=false
+- 发布事件 → 匹配订阅入队 (enqueued_count ≥ 1)
+- 投递日志显示 status=pending/success/failed
+- 删除订阅 → 204
+
+**依赖**: aiohttp (HTTP POST 投递)
+
+### ✅ Phase 8 完工验收 (2026-08-28)
+
+| 批次 | 主题 | Commit | 单元测试 | E2E 验收 |
+|------|------|--------|----------|----------|
+| **B35** | **通用 Webhook 投递系统 (13 事件 + HMAC 签名 + 指数退避重试 + 投递日志)** | **`febc5d6`** | **38** | **11/11** |
+
+**Phase 8 累计**: 38/38 单元测试 ✅ · 11/11 E2E 验收 ✅ · `make backend-lint` All checks passed ✅
+
+**累计总计 (Phase 1.5 + Phase 5 + Phase 6 + Phase 7 + Phase 8)**: 453/453 单元测试 ✅ · 60/60 E2E 验收 ✅
+
+**新增能力覆盖矩阵**:
+
+| 维度 | 落地能力 | 验证方法 |
+|------|----------|----------|
+| **事件订阅** | 13 类事件 + URL + secret + 事件过滤 | B35 E2E 列表/详情 |
+| **HMAC 签名** | X-HSCredit-Signature 头 + sha256 + 5 分钟时间窗 | B35 verify-signature E2E |
+| **失败重试** | 5 次指数退避 (1m/5m/30m/2h/12h) + status 流转 | retry_failed_delivery 单测 |
+| **投递日志** | status + response_status + response_body + attempt + last_error | B35 投递日志 E2E |
+| **手动重试** | POST /webhooks/deliveries/{id}/retry 触发单次投递 | E2E 可扩展 |
+| **签名调试** | /webhooks/verify-signature 供租户端验证接收逻辑 | B35 双签名 E2E |
+
+**新增表 / 迁移**:
+- `webhook_subscriptions` (B35, 0013_webhook_subscriptions) — 租户订阅 (url + secret + events array + active)
+- `webhook_deliveries` (B35) — 单次投递 (status + attempt + response + last_error + scheduled_at)
+- 索引: `(status, scheduled_at)` 用于后台重试扫描
+
+**Webhook 三方对比矩阵** (与 B23 / B27 完整覆盖 webhook 全方向):
+
+| 维度 | B23 通知 | B27 Alertmanager | B35 Webhook |
+|------|----------|------------------|-------------|
+| 方向 | 出站 (平台→运维) | 入站 (告警→平台) | 出站 (平台→租户) |
+| 协议 | Slack/WeCom/SMTP | HTTP POST (Prometheus) | HTTP POST + HMAC |
+| 触发 | 平台事件 | 告警规则 | 13 类业务事件 |
+| 接收方 | 运维人员 | 平台数据库 | 租户自建系统 |
+| 验签 | 无 | Prometheus 自定义 | HMAC-SHA256 + 时间窗 |
+| 重试 | 失败重试 3 次 | 无 (去重 by fingerprint) | 5 次指数退避 |
+
+
 ## 9. 跨阶段主题
 
 ### 9.1 性能预算
@@ -610,6 +680,7 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 | Phase 5 | 等保三级测评通过 + PIPL 权利全实现 + 274 单元测试 + 61 E2E | 第三方测评报告 + 自动化权利测试 |
 | Phase 6 | super_admin 可管理 50 个租户 + 6 个行业模板 + 跨租户共享 | 375 单测 + 32 E2E + UAT |
 | Phase 7 | 3 个集成通道全通 + PMML/ONNX 跨平台一致 | E2E + 415 单测 + 49 E2E + 跨语言校验 |
+| Phase 8 | Webhook 投递系统 + 13 事件类型 + HMAC 签名 | E2E + 38 单测 + 11 E2E + 重投递演练 |
 
 ---
 
@@ -618,3 +689,4 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 - 2026-08-28：Phase 5 合规闭环 6 批次全部完工（B22–B27），新增 274 单元测试 + 61 E2E 验收，等保三级 6 项硬性要求 + PIPL 3 类用户权利全部落地。Commit 范围：`38a8ac5`..`7658d8a`。
 - 2026-08-28：Phase 6 租户超管 + 模板生态 4 批次全部完工（B28–B31），新增 102 单元测试 + 32 E2E 验收，RBAC 5×5×3 矩阵 + super_admin 跨租户后台 + 6 个行业模板市场 + 跨租户共享审核全部落地。Commit 范围：`4ebce12`..`1f8e35a`。
 - 2026-08-28：Phase 7 第三方集成 3 批次全部完工（B32–B34），新增 40 单元测试 + 17 E2E 验收，B32 通知通道复用 B23、B33 BI 报表导出 (CSV/NDJSON/Parquet + PowerBI/Tableau/FineBI + 4 DB 视图) + B34 模型导出 PMML/ONNX (跨平台一致性校验 < 1e-6) 全部落地。Commit 范围：`4fe0c47`..`f6d31a9`。
+- 2026-08-28：Phase 8 通用 Webhook 投递系统 1 批次完工（B35），新增 38 单元测试 + 11 E2E 验收，13 类业务事件 + HMAC-SHA256 签名 + 5 分钟时间窗防重放 + 5 次指数退避重试 + 投递日志全部落地。Webhook 全方向覆盖: B23 通知 (出站运维) + B27 Alertmanager (入站告警) + B35 Webhook (出站租户系统)。Commit：`febc5d6`。
