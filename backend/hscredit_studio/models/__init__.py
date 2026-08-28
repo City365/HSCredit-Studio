@@ -57,6 +57,18 @@ from hscredit_studio.models.notification import (
     NotificationConfig,
     NotificationLog,
 )
+
+# PIPL 数据保护 (Phase 5 B26)
+from hscredit_studio.models.pipl import (
+    CONSENT_PURPOSE_VALUES,
+    CROSS_BORDER_BASIS_VALUES,
+    DSR_STATUS_VALUES,
+    DSR_TYPE_VALUES,
+    ConsentRecord,
+    CrossBorderTransfer,
+    DataSubjectRequest,
+    PrivacyPolicyVersion,
+)
 from hscredit_studio.models.run import (
     LOG_STREAM_VALUES,
     NODE_STATUS_VALUES,
@@ -112,8 +124,12 @@ __all__ = [
     "ACCOUNT_LOCKOUT_STATUS_VALUES",  # Phase 5 B25
     "BILL_STATUS_VALUES",
     "CHAIN_CHECKPOINT_STATUS_VALUES",  # Phase 5 B25
+    "CONSENT_PURPOSE_VALUES",  # Phase 5 B26
     "CONTRACT_STATUS_VALUES",
+    "CROSS_BORDER_BASIS_VALUES",  # Phase 5 B26
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
+    "DSR_STATUS_VALUES",  # Phase 5 B26
+    "DSR_TYPE_VALUES",  # Phase 5 B26
     "INVOICE_STATUS_VALUES",
     "INVOICE_TYPE_VALUES",
     "IP_RULE_TYPE_VALUES",  # Phase 5 B25
@@ -142,10 +158,13 @@ __all__ = [
     # base mixin
     "Base",
     "Bill",
+    "ConsentRecord",  # Phase 5 B26
     "Contract",
+    "CrossBorderTransfer",  # Phase 5 B26
     "CustomNode",
     "CustomNodeTestRun",
     "CustomNodeVersion",
+    "DataSubjectRequest",  # Phase 5 B26
     "Invoice",
     "IpAccessRule",  # Phase 5 B25
     "ModelSerializerMixin",
@@ -159,6 +178,7 @@ __all__ = [
     # 通知 (Phase 5 B23)
     "NotificationConfig",
     "NotificationLog",
+    "PrivacyPolicyVersion",  # Phase 5 B26
     # 执行
     "Run",
     "RunArtifact",

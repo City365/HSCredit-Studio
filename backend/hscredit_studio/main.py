@@ -20,6 +20,7 @@ from hscredit_studio.api.v1 import (
     monitor,
     nodes,
     notifications,
+    pipl,
     quota,
     runs,
     security,
@@ -102,6 +103,7 @@ app.include_router(contracts.router, prefix="/api/v1/{tenant_slug}/contracts", t
 app.include_router(notifications.router, prefix="/api/v1/{tenant_slug}/notifications", tags=["通知"])
 app.include_router(data_classification.router, prefix="/api/v1/{tenant_slug}/data-classification", tags=["数据脱敏"])
 app.include_router(security.router, prefix="/api/v1/{tenant_slug}/security", tags=["安全加固"])
+app.include_router(pipl.router, prefix="/api/v1/{tenant_slug}/pipl", tags=["PIPL"])
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
 

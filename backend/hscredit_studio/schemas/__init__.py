@@ -60,6 +60,23 @@ from hscredit_studio.schemas.node_contract import (
     PortType,
 )
 
+# ----- PIPL (Phase 5 B26) -----
+from hscredit_studio.schemas.pipl import (
+    AnonymizationResponse,
+    ConsentGrantRequest,
+    ConsentRevokeRequest,
+    ConsentStateResponse,
+    CrossBorderApproveRequest,
+    CrossBorderRequestSchema,
+    CrossBorderResponse,
+    DsrListItem,
+    DsrProcessRequest,
+    DsrSubmitRequest,
+    DsrSubmitResponse,
+    PrivacyPolicyResponse,
+    UserDataPackageResponse,
+)
+
 # ----- Run / 节点执行 / 产物 -----
 from hscredit_studio.schemas.run import (
     ArtifactListResponse,
@@ -122,6 +139,8 @@ from hscredit_studio.schemas.workflow import (
 )
 
 __all__ = [
+    # PIPL (Phase 5 B26)
+    "AnonymizationResponse",
     # run
     "ArtifactListResponse",
     "ArtifactResponse",
@@ -133,8 +152,18 @@ __all__ = [
     "CacheStrategy",
     # 安全加固 (Phase 5 B25)
     "ChainCheckResponse",
+    "ConsentGrantRequest",
+    "ConsentRevokeRequest",
+    "ConsentStateResponse",
+    "CrossBorderApproveRequest",
+    "CrossBorderRequestSchema",
+    "CrossBorderResponse",
     # 用量 (Phase 4 B18)
     "DimensionUsage",
+    "DsrListItem",
+    "DsrProcessRequest",
+    "DsrSubmitRequest",
+    "DsrSubmitResponse",
     # workflow
     "EdgeDef",
     "ErrorDetail",
@@ -177,6 +206,7 @@ __all__ = [
     "PasswordCheckResponse",
     "PortSchema",
     "PortType",
+    "PrivacyPolicyResponse",
     "RedactRequest",
     "RedactResponse",
     "RefreshRequest",
@@ -195,6 +225,7 @@ __all__ = [
     "ThreatHitInfo",
     "TimestampedSchema",
     "TokenPair",
+    "UserDataPackageResponse",
     "UserInfo",
     "VulnerabilityCreate",
     "VulnerabilityResponse",
