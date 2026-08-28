@@ -101,6 +101,16 @@ from hscredit_studio.schemas.industry_templates import (
     IndustryTemplateSummary,
 )
 
+# ----- 模型导出 (Phase 7 B34) -----
+from hscredit_studio.schemas.model_export import (
+    DemoModelRequest,
+    DemoModelResponse,
+    ModelExportRequest,
+    ModelExportResponse,
+    ModelValidationRequest,
+    ModelValidationResponse,
+)
+
 # ----- 节点契约 -----
 from hscredit_studio.schemas.node_contract import (
     CacheConfig,
@@ -256,6 +266,9 @@ __all__ = [
     "CrossBorderRequestSchema",
     "CrossBorderResponse",
     "CrossTenantShareRequest",  # Phase 6 B31
+    # 模型导出 (Phase 7 B34)
+    "DemoModelRequest",
+    "DemoModelResponse",
     # 用量 (Phase 4 B18)
     "DimensionUsage",
     "DsrListItem",
@@ -292,6 +305,10 @@ __all__ = [
     "LogoutRequest",
     "MaskResult",
     "MenuResponse",
+    "ModelExportRequest",
+    "ModelExportResponse",
+    "ModelValidationRequest",
+    "ModelValidationResponse",
     "NodeCategory",
     "NodeContract",
     "NodeDef",

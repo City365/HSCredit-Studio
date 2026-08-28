@@ -21,6 +21,7 @@ from hscredit_studio.api.v1 import (
     data_classification,
     health,
     industry_templates,
+    model_export,
     monitor,
     nodes,
     notifications,
@@ -127,6 +128,11 @@ app.include_router(
     bi_export.router,
     prefix="/api/v1/{tenant_slug}/bi-exports",
     tags=["BI 报表"],
+)
+app.include_router(
+    model_export.router,
+    prefix="/api/v1/{tenant_slug}/model-export",
+    tags=["模型导出"],
 )
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
