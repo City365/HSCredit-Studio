@@ -25,6 +25,11 @@ const MonitorDashboard = lazy(() => import('./pages/monitor/Dashboard'));
 const ModelRepository = lazy(() => import('./pages/models/Repository'));
 const AuditPage = lazy(() => import('./pages/audit/List'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+// 批次 1 (Phase 7-8 新功能前端)
+const WebhooksList = lazy(() => import('./pages/webhooks/List'));
+const WebhookDetail = lazy(() => import('./pages/webhooks/Detail'));
+const BIExportsPage = lazy(() => import('./pages/bi-exports/Index'));
+const ModelExportPage = lazy(() => import('./pages/model-export/Index'));
 
 const Loading = (): React.ReactElement => (
   <div
@@ -73,6 +78,11 @@ export const router = createBrowserRouter([
       { path: 'monitor', element: <Suspense fallback={<Loading />}><MonitorDashboard /></Suspense> },
       { path: 'models', element: <Suspense fallback={<Loading />}><ModelRepository /></Suspense> },
       { path: 'audit', element: <Suspense fallback={<Loading />}><AuditPage /></Suspense> },
+      // 批次 1 新路由 (Phase 7-8)
+      { path: 'webhooks', element: <Suspense fallback={<Loading />}><WebhooksList /></Suspense> },
+      { path: 'webhooks/:id', element: <Suspense fallback={<Loading />}><WebhookDetail /></Suspense> },
+      { path: 'bi-exports', element: <Suspense fallback={<Loading />}><BIExportsPage /></Suspense> },
+      { path: 'model-export', element: <Suspense fallback={<Loading />}><ModelExportPage /></Suspense> },
     ],
   },
 
