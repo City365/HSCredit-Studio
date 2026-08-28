@@ -55,13 +55,17 @@ def _build_token_pair(user: User, tenant: Tenant, role: str) -> TokenPair:
     - ``type`` — ``"access"`` / ``"refresh"``
     - ``tenant_id`` — 租户 UUID
     - ``tenant_slug`` — 租户 slug
-    - ``role`` — 在该租户的角色
+    - ``role`` — 在该租户的角色 (含 is_super_admin 升级)
+    - ``is_super_admin`` — 平台超管标记 (Phase 6 B29)
     - ``exp`` / ``iat`` — 由 ``create_*_token`` 自动填充
     """
+    # Phase 6 B29: is_super_admin 用户跨租户访问, role 升级到 super_admin
+    effective_role = "super_admin" if user.is_super_admin else role
     extra_claims: dict[str, str] = {
         "tenant_id": str(tenant.tenant_id),
         "tenant_slug": tenant.slug,
-        "role": role,
+        "role": effective_role,
+        "is_super_admin": "true" if user.is_super_admin else "false",
     }
     access_token = create_access_token(
         subject=str(user.user_id),

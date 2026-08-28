@@ -42,7 +42,7 @@ DEMO_TENANTS = [
         "slug": "demo",
         "plan": "pro",
         "users": [
-            {"email": "admin@demo.com", "display_name": "Demo Admin", "password": "DemoPass123!", "role": "owner"},
+            {"email": "admin@demo.com", "display_name": "Demo Admin", "password": "DemoPass123!", "role": "owner", "is_super_admin": True},
             {
                 "email": "analyst@demo.com",
                 "display_name": "Demo Analyst",
@@ -103,6 +103,7 @@ async def seed_users():
                     status="active",
                     locale="zh-CN",
                     email_verified_at=datetime.utcnow(),
+                    is_super_admin=u.get("is_super_admin", False),
                 )
                 session.add(user)
                 await session.flush()

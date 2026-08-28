@@ -14,6 +14,25 @@
 
 from __future__ import annotations
 
+# ----- 超管后台 (Phase 6 B29) -----
+from hscredit_studio.schemas.admin import (
+    GlobalOverviewResponse,
+    RoleChangeRequest,
+    RoleChangeResponse,
+    TenantAuditEventInfo,
+    TenantDetailResponse,
+    TenantListItem,
+    TenantListResponse,
+    TenantMemberInfo,
+    TenantMigrateRequest,
+    TenantMigrateResponse,
+    TenantOverviewItem,
+    TenantStatusUpdateRequest,
+    TenantStatusUpdateResponse,
+    TenantTrendPoint,
+    TenantUsageInfo,
+)
+
 # ----- 告警 (Phase 5 B27) -----
 from hscredit_studio.schemas.alert import (
     AlertEvaluateRequest,
@@ -37,8 +56,6 @@ from hscredit_studio.schemas.auth import (
     TokenPair,
     UserInfo,
 )
-
-# ----- 通用 -----
 from hscredit_studio.schemas.common import (
     BaseSchema,
     ErrorDetail,
@@ -206,6 +223,7 @@ __all__ = [
     "ErrorResponse",
     # 数据脱敏 (Phase 5 B24)
     "FieldClassificationInfo",
+    "GlobalOverviewResponse",  # Phase 6 B29
     "IDSchema",
     "IntrusionCheckRequest",
     "IntrusionCheckResponse",
@@ -254,6 +272,8 @@ __all__ = [
     "RefreshResponse",
     "RoleAuditItem",
     "RoleAuditListResponse",
+    "RoleChangeRequest",
+    "RoleChangeResponse",
     "RoleInfo",
     "RolePolicyCreate",
     "RolePolicyResponse",
@@ -267,6 +287,18 @@ __all__ = [
     "SiemExportRequest",
     "SiemExportResponse",
     "SuccessResponse",
+    "TenantAuditEventInfo",
+    "TenantDetailResponse",
+    "TenantListItem",
+    "TenantListResponse",
+    "TenantMemberInfo",
+    "TenantMigrateRequest",
+    "TenantMigrateResponse",
+    "TenantOverviewItem",
+    "TenantStatusUpdateRequest",
+    "TenantStatusUpdateResponse",
+    "TenantTrendPoint",
+    "TenantUsageInfo",
     "TenantUsageResponse",
     "ThreatHitInfo",
     "TimestampedSchema",
