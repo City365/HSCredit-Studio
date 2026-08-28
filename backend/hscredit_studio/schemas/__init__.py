@@ -14,6 +14,21 @@
 
 from __future__ import annotations
 
+# ----- 告警 (Phase 5 B27) -----
+from hscredit_studio.schemas.alert import (
+    AlertEvaluateRequest,
+    AlertEvaluateResponse,
+    AlertHistoryItem,
+    AlertInstanceIngestRequest,
+    AlertInstanceResponse,
+    AlertmanagerConfigResponse,
+    AlertRuleCreate,
+    AlertRuleResponse,
+    AlertSilenceCreate,
+    AlertSilenceResponse,
+    PrometheusRulesResponse,
+)
+
 # ----- 认证 -----
 from hscredit_studio.schemas.auth import (
     LoginRequest,
@@ -140,6 +155,16 @@ from hscredit_studio.schemas.workflow import (
 
 __all__ = [
     # PIPL (Phase 5 B26)
+    "AlertEvaluateRequest",
+    "AlertEvaluateResponse",
+    "AlertHistoryItem",
+    "AlertInstanceIngestRequest",
+    "AlertInstanceResponse",
+    "AlertRuleCreate",
+    "AlertRuleResponse",
+    "AlertSilenceCreate",
+    "AlertSilenceResponse",
+    "AlertmanagerConfigResponse",
     "AnonymizationResponse",
     # run
     "ArtifactListResponse",
@@ -207,6 +232,7 @@ __all__ = [
     "PortSchema",
     "PortType",
     "PrivacyPolicyResponse",
+    "PrometheusRulesResponse",
     "RedactRequest",
     "RedactResponse",
     "RefreshRequest",

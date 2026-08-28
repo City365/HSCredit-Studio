@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from hscredit_studio.api.v1 import (
+    alerts,
     audit,
     auth,
     billing,
@@ -26,6 +27,7 @@ from hscredit_studio.api.v1 import (
 )
 
 __all__ = [
+    "alerts",
     "audit",
     "auth",
     "billing",

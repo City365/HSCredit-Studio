@@ -12,6 +12,16 @@
 
 from __future__ import annotations
 
+# 告警 (Phase 5 B27)
+from hscredit_studio.models.alert import (
+    ALERT_CHANNEL_VALUES,
+    ALERT_SEVERITY_VALUES,
+    ALERT_STATE_VALUES,
+    AlertHistory,
+    AlertInstance,
+    AlertRule,
+    AlertSilence,
+)
 from hscredit_studio.models.artifact import (
     NODE_ARTIFACT_TYPE_VALUES,
     RUN_ARTIFACT_TYPE_VALUES,
@@ -122,6 +132,9 @@ from hscredit_studio.models.workflow import (
 
 __all__ = [
     "ACCOUNT_LOCKOUT_STATUS_VALUES",  # Phase 5 B25
+    "ALERT_CHANNEL_VALUES",  # Phase 5 B27
+    "ALERT_SEVERITY_VALUES",  # Phase 5 B27
+    "ALERT_STATE_VALUES",  # Phase 5 B27
     "BILL_STATUS_VALUES",
     "CHAIN_CHECKPOINT_STATUS_VALUES",  # Phase 5 B25
     "CONSENT_PURPOSE_VALUES",  # Phase 5 B26
@@ -151,6 +164,10 @@ __all__ = [
     "VULNERABILITY_SEVERITY_VALUES",  # Phase 5 B25
     "VULNERABILITY_STATUS_VALUES",  # Phase 5 B25
     "AccountLockout",  # Phase 5 B25
+    "AlertHistory",  # Phase 5 B27
+    "AlertInstance",  # Phase 5 B27
+    "AlertRule",  # Phase 5 B27
+    "AlertSilence",  # Phase 5 B27
     "ApiKey",
     # 审计
     "AuditChainCheckpoint",  # Phase 5 B25
