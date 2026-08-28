@@ -253,6 +253,27 @@ async def generate_contract_for_tenant(
             contract_type=contract_type,
             pdf_path=pdf_path,
         )
+
+        # Phase 5 B22: 审计 - 合同生成
+        try:
+            from hscredit_studio.services.audit import AuditAction, ResourceType, record_event
+
+            await record_event(
+                session,
+                tenant_id=tenant_id,
+                user_id=None,
+                action=AuditAction.CONTRACT_SIGN,  # 复用于合同生命周期
+                resource_type=ResourceType.CONTRACT,
+                resource_id=contract.contract_id,
+                details={
+                    "contract_type": contract_type,
+                    "contract_number": contract_number,
+                    "pdf_path": pdf_path,
+                },
+            )
+        except Exception as e:
+            _log.warning("contract_audit_failed", error=str(e)[:200])
+
         return contract
 
 
@@ -284,6 +305,27 @@ async def sign_contract(contract_id: UUID, tenant_id: UUID) -> Contract:
             contract_id=str(contract_id),
             signed_at=contract.signed_at.isoformat(),
         )
+
+        # Phase 5 B22: 审计 - 合同签约
+        try:
+            from hscredit_studio.services.audit import AuditAction, ResourceType, record_event
+
+            await record_event(
+                session,
+                tenant_id=tenant_id,
+                user_id=None,
+                action=AuditAction.CONTRACT_SIGN,
+                resource_type=ResourceType.CONTRACT,
+                resource_id=contract.contract_id,
+                details={
+                    "contract_number": contract.contract_number,
+                    "contract_type": contract.contract_type,
+                    "signed_at": contract.signed_at.isoformat(),
+                },
+            )
+        except Exception as e:
+            _log.warning("contract_sign_audit_failed", error=str(e)[:200])
+
         return contract
 
 

@@ -112,6 +112,28 @@ async def submit_vat_invoice_application(
             invoice_type=application.invoice_type,
             buyer_tax_id_prefix=application.buyer_tax_id[:6] + "***",
         )
+
+        # Phase 5 B22: 审计 - 专票申请
+        try:
+            from hscredit_studio.services.audit import AuditAction, ResourceType, record_event
+
+            await record_event(
+                session,
+                tenant_id=tenant_id,
+                user_id=None,
+                action=AuditAction.VAT_INVOICE_APPLY,
+                resource_type=ResourceType.INVOICE,
+                resource_id=invoice.invoice_id,
+                details={
+                    "invoice_type": application.invoice_type,
+                    "buyer_name": application.buyer_name,
+                    "buyer_tax_id_prefix": application.buyer_tax_id[:6] + "***",
+                    "amount": float(invoice.amount),
+                },
+            )
+        except Exception as e:
+            _log.warning("vat_invoice_audit_failed", error=str(e)[:200])
+
         return invoice
 
 

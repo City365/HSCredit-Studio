@@ -32,7 +32,15 @@ _log = get_logger(__name__)
 
 
 class AuditAction:
-    """审计动作字符串常量 — 避免业务代码中出现 magic strings."""
+    """审计动作字符串常量 — 避免业务代码中出现 magic strings.
+
+    Phase 5 B22 扩展:
+    - DATA_ACCESS — 数据访问 (含敏感字段读取)
+    - PERMISSION_CHANGE — 权限变更 (角色/成员)
+    - CONFIG_CHANGE — 配置变更 (租户 plan / 限额 / 设置)
+    - EXPORT — 数据/模型导出
+    - AUTH_FAILURE — 鉴权失败 (含 JWT 无效 / 越权访问)
+    """
 
     LOGIN = "login"
     LOGOUT = "logout"
@@ -51,6 +59,18 @@ class AuditAction:
     APIKEY_CREATE = "apikey_create"
     APIKEY_REVOKE = "apikey_revoke"
     CUSTOM_NODE_PUBLISH = "custom_node_publish"
+    # Phase 5 B22 新增
+    DATA_ACCESS = "data_access"
+    DATA_EXPORT = "data_export"
+    IMAGE_EXPORT = "image_export"
+    MODEL_EXPORT = "model_export"
+    PERMISSION_CHANGE = "permission_change"
+    CONFIG_CHANGE = "config_change"
+    AUTH_FAILURE = "auth_failure"
+    CONTRACT_SIGN = "contract_sign"
+    VAT_INVOICE_APPLY = "vat_invoice_apply"
+    BILL_GENERATE = "bill_generate"
+    PAYMENT_INIT = "payment_init"
 
 
 class ResourceType:
@@ -62,6 +82,14 @@ class ResourceType:
     USER = "user"
     APIKEY = "apikey"
     CUSTOM_NODE = "custom_node"
+    # Phase 5 B22 新增
+    DATASET = "dataset"
+    BILL = "bill"
+    INVOICE = "invoice"
+    CONTRACT = "contract"
+    TENANT_CONFIG = "tenant_config"
+    ROLE = "role"
+    MODEL_ARTIFACT = "model_artifact"
 
 
 # ===== 写入 =====

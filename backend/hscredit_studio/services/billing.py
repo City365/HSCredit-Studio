@@ -228,7 +228,30 @@ async def generate_bill_for_tenant(
             billing_period=billing_period,
             grand_total=comp.grand_total,
         )
-        return bill
+
+    # Phase 5 B22: 审计 - 账单生成 (在原 session 关闭后, 开新 session 写审计)
+    try:
+        from hscredit_studio.services.audit import AuditAction, ResourceType, record_event
+
+        async with session_scope() as audit_session:
+            await record_event(
+                audit_session,
+                tenant_id=tenant_id,
+                user_id=None,
+                action=AuditAction.BILL_GENERATE,
+                resource_type=ResourceType.BILL,
+                resource_id=bill.bill_id,
+                details={
+                    "billing_period": billing_period,
+                    "plan": plan,
+                    "total_amount": comp.grand_total,
+                    "currency": comp.currency,
+                },
+            )
+    except Exception as e:
+        _log.warning("bill_audit_failed", error=str(e)[:200])
+
+    return bill
 
 
 # ===== 发票 PDF 生成 =====
