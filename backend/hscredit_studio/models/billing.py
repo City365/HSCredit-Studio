@@ -23,6 +23,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
     text,
 )
@@ -40,6 +41,9 @@ from hscredit_studio.models.base import (
 BILL_STATUS_VALUES = ("draft", "pending", "paid", "overdue", "voided")
 INVOICE_STATUS_VALUES = ("draft", "issued", "paid", "voided", "refunded")
 PAYMENT_CHANNEL_VALUES = ("stripe", "wechat", "alipay", "manual")
+# Phase 4 B21: 中国增值税发票类型
+INVOICE_TYPE_VALUES = ("normal", "vat_special", "vat_general", "receipt")
+CONTRACT_STATUS_VALUES = ("draft", "pending_signature", "signed", "archived", "voided")
 
 
 class Bill(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
@@ -137,6 +141,75 @@ class Bill(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
     )
 
 
+class Contract(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
+    """合同 — Phase 4 B21.
+
+    类型: service_agreement / dpa (数据处理协议) / nda (保密协议) / quote (报价单).
+    状态机: draft → pending_signature → signed → archived / voided.
+    PDF 含电子签章占位 (生产对接法大大 / e签宝).
+    """
+
+    __tablename__ = "contracts"
+
+    contract_id: Mapped[uuid.UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    contract_number: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        unique=True,
+        comment="合同号 (业务唯一, 例: CT-2026-001)",
+    )
+    contract_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="service_agreement / dpa / nda / quote",
+    )
+    title: Mapped[str] = mapped_column(
+        String(256),
+        nullable=False,
+        comment="合同标题",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        server_default=text("'draft'"),
+        comment=f"合同状态 {CONTRACT_STATUS_VALUES}",
+    )
+    valid_from: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False),
+        nullable=True,
+        comment="生效日",
+    )
+    valid_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False),
+        nullable=True,
+        comment="到期日",
+    )
+    signed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=False),
+        nullable=True,
+        comment="签约时间",
+    )
+    pdf_path: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+        comment="PDF 路径",
+    )
+    extra_metadata: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment="扩展元数据 (签约方/条款摘要等)",
+    )
+
+    __table_args__ = (
+        Index("ix_contracts_tenant_status", "tenant_id", "status"),
+        Index("ix_contracts_type", "contract_type"),
+    )
+
+
 class Invoice(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
     """发票 (Phase 4 B20).
 
@@ -167,6 +240,12 @@ class Invoice(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
         server_default=text("'draft'"),
         comment=f"发票状态 {INVOICE_STATUS_VALUES}",
     )
+    invoice_type: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        server_default=text("'normal'"),
+        comment=f"发票类型 {INVOICE_TYPE_VALUES}",
+    )
     amount: Mapped[float] = mapped_column(
         Float, nullable=False, server_default=text("0"),
         comment="发票金额 (元)",
@@ -185,19 +264,49 @@ class Invoice(Base, TimestampMixin, TenantMixin, ModelSerializerMixin):
         nullable=True,
         comment="开票时间 (UTC)",
     )
+    # Phase 4 B21: 增值税专票申请相关字段
+    buyer_tax_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="购买方税号 (增值税专票必填)",
+    )
+    buyer_name: Mapped[str | None] = mapped_column(
+        String(256),
+        nullable=True,
+        comment="购买方名称 (专票抬头)",
+    )
+    buyer_address_phone: Mapped[str | None] = mapped_column(
+        String(256),
+        nullable=True,
+        comment="购买方地址电话",
+    )
+    buyer_bank_account: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        comment="购买方开户行 + 账号",
+    )
+    application_note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="专票申请备注",
+    )
 
     bill: Mapped[Bill] = relationship("Bill", back_populates="invoices")
 
     __table_args__ = (
         Index("ix_invoices_bill", "bill_id"),
         Index("ix_invoices_status", "status"),
+        Index("ix_invoices_type", "invoice_type"),
     )
 
 
 __all__ = [
     "BILL_STATUS_VALUES",
+    "CONTRACT_STATUS_VALUES",
     "INVOICE_STATUS_VALUES",
+    "INVOICE_TYPE_VALUES",
     "PAYMENT_CHANNEL_VALUES",
     "Bill",
+    "Contract",
     "Invoice",
 ]

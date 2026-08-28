@@ -32,9 +32,12 @@ from hscredit_studio.models.base import (
 )
 from hscredit_studio.models.billing import (
     BILL_STATUS_VALUES,
+    CONTRACT_STATUS_VALUES,
     INVOICE_STATUS_VALUES,
+    INVOICE_TYPE_VALUES,
     PAYMENT_CHANNEL_VALUES,
     Bill,
+    Contract,
     Invoice,
 )
 from hscredit_studio.models.node import (
@@ -86,8 +89,10 @@ from hscredit_studio.models.workflow import (
 
 __all__ = [
     "BILL_STATUS_VALUES",
+    "CONTRACT_STATUS_VALUES",
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
     "INVOICE_STATUS_VALUES",
+    "INVOICE_TYPE_VALUES",
     "LOG_STREAM_VALUES",
     "MEMBER_ROLE_VALUES",
     "MEMBER_STATUS_VALUES",
@@ -107,6 +112,7 @@ __all__ = [
     # base mixin
     "Base",
     "Bill",
+    "Contract",
     "CustomNode",
     "CustomNodeTestRun",
     "CustomNodeVersion",
