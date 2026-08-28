@@ -30,6 +30,19 @@ const WebhooksList = lazy(() => import('./pages/webhooks/List'));
 const WebhookDetail = lazy(() => import('./pages/webhooks/Detail'));
 const BIExportsPage = lazy(() => import('./pages/bi-exports/Index'));
 const ModelExportPage = lazy(() => import('./pages/model-export/Index'));
+// 批次 2-5 (Phase 4-6 功能前端)
+const IndustryTemplatesPage = lazy(() => import('./pages/industry-templates/Index'));
+const TemplateSharingPage = lazy(() => import('./pages/template-sharing/Index'));
+const BillingListPage = lazy(() => import('./pages/billing/List'));
+const ContractsListPage = lazy(() => import('./pages/contracts/List'));
+const AdminPage = lazy(() => import('./pages/admin/Index'));
+const NotificationsPage = lazy(() => import('./pages/notifications/Index'));
+const AlertsPage = lazy(() => import('./pages/alerts/Index'));
+const SecurityPage = lazy(() => import('./pages/security/Index'));
+const PiplPage = lazy(() => import('./pages/pipl/Index'));
+const DataClassificationPage = lazy(() => import('./pages/data-classification/Index'));
+const RbacPage = lazy(() => import('./pages/rbac/Index'));
+const QuotaPage = lazy(() => import('./pages/quota/Index'));
 
 const Loading = (): React.ReactElement => (
   <div
@@ -83,6 +96,19 @@ export const router = createBrowserRouter([
       { path: 'webhooks/:id', element: <Suspense fallback={<Loading />}><WebhookDetail /></Suspense> },
       { path: 'bi-exports', element: <Suspense fallback={<Loading />}><BIExportsPage /></Suspense> },
       { path: 'model-export', element: <Suspense fallback={<Loading />}><ModelExportPage /></Suspense> },
+      // 批次 2-5
+      { path: 'industry-templates', element: <Suspense fallback={<Loading />}><IndustryTemplatesPage /></Suspense> },
+      { path: 'template-sharing', element: <Suspense fallback={<Loading />}><TemplateSharingPage /></Suspense> },
+      { path: 'billing', element: <Suspense fallback={<Loading />}><BillingListPage /></Suspense> },
+      { path: 'contracts', element: <Suspense fallback={<Loading />}><ContractsListPage /></Suspense> },
+      { path: 'admin', element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
+      { path: 'notifications', element: <Suspense fallback={<Loading />}><NotificationsPage /></Suspense> },
+      { path: 'alerts', element: <Suspense fallback={<Loading />}><AlertsPage /></Suspense> },
+      { path: 'security', element: <Suspense fallback={<Loading />}><SecurityPage /></Suspense> },
+      { path: 'pipl', element: <Suspense fallback={<Loading />}><PiplPage /></Suspense> },
+      { path: 'data-classification', element: <Suspense fallback={<Loading />}><DataClassificationPage /></Suspense> },
+      { path: 'rbac', element: <Suspense fallback={<Loading />}><RbacPage /></Suspense> },
+      { path: 'quota', element: <Suspense fallback={<Loading />}><QuotaPage /></Suspense> },
     ],
   },
 
