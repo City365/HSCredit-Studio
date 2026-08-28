@@ -529,6 +529,44 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 
 ---
 
+### ✅ Phase 7 完工验收 (2026-08-28)
+
+| 批次 | 主题 | Commit | 单元测试 | E2E 验收 |
+|------|------|--------|----------|----------|
+| B32 | 通知通道 (与 B23 复用 — 见 Phase 5 B23) | `6110465` | (沿用 B23) | (沿用 B23) |
+| **B33** | **BI 报表导出 (CSV/NDJSON/Parquet + PowerBI/Tableau/FineBI + 4 DB 视图)** | **`4fe0c47`** | **20** | **10/10** |
+| **B34** | **模型导出 PMML/ONNX (手工 PMML + skl2onnx 适配 + 跨平台一致性校验)** | **`f6d31a9`** | **20** | **7/7** |
+
+**Phase 7 累计**: 40/40 单元测试 ✅ · 17/17 E2E 验收 ✅ · `make backend-lint` All checks passed ✅
+
+**累计总计 (Phase 1.5 + Phase 5 + Phase 6 + Phase 7)**: 415/415 单元测试 ✅ · 49/49 E2E 验收 ✅
+
+**新增能力覆盖矩阵**:
+
+| 维度 | 落地能力 | 验证方法 |
+|------|----------|----------|
+| **BI 流式导出** | CSV (UTF-8 BOM) / NDJSON / Parquet 三格式流式, 6 个数据集 | B33-1..4 E2E |
+| **BI 工具直连** | PowerBI M Query 模板 + Tableau .tds XML + 帆软 FineBI 中文数据包 | B33-6..8 E2E |
+| **BI 数据库视图** | v_bi_audit_recent / v_bi_run_summary / v_bi_usage_daily / v_bi_billing_summary (4 个) | B33-5 E2E + alembic 0012 |
+| **PMML 导出** | 手工 PMML 4.4 XML (评分卡) + sklearn2pmml 适配, JPMML-Evaluator 兼容 | B34-3 E2E |
+| **ONNX 导出** | skl2onnx 适配 + 手工 ONNX 回退, ONNX Runtime 兼容 | B34-4 E2E |
+| **跨平台一致性校验** | max_abs_error < 1e-6 容限对比原模型与导出模型 | B34-5 E2E |
+| **模型加载降级** | sklearn2pmml / skl2onnx 未安装时降级到手工渲染 | 单元 test_export_*_fallback |
+
+**新增表 / 迁移 / 视图**:
+- `v_bi_audit_recent` (B33, 0012_bi_views) — 近 90 天审计事件扁平化视图
+- `v_bi_run_summary` (B33) — Run 汇总 (含 node_count / duration_ms)
+- `v_bi_usage_daily` (B33) — 按日聚合用量 (run/duration/failed/success)
+- `v_bi_billing_summary` (B33) — 账单汇总
+- GRANT SELECT 给 bi_reader 角色 (生产环境)
+
+**新增依赖 (B33 / B34)**:
+- `pandas + pyarrow` (Parquet, 可选 — 服务端降级到 501)
+- `sklearn2pmml` (PMML, 可选 — 降级到手工 PMML)
+- `skl2onnx` (ONNX, 可选 — 降级到手工 ONNX)
+
+---
+
 ## 9. 跨阶段主题
 
 ### 9.1 性能预算
@@ -571,7 +609,7 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 | Phase 4 | B18–B21 4 批全过 + 模拟客户走完计费周期 | `scripts/e2e/run_e2e_phase4.py` |
 | Phase 5 | 等保三级测评通过 + PIPL 权利全实现 + 274 单元测试 + 61 E2E | 第三方测评报告 + 自动化权利测试 |
 | Phase 6 | super_admin 可管理 50 个租户 + 6 个行业模板 + 跨租户共享 | 375 单测 + 32 E2E + UAT |
-| Phase 7 | 3 个集成通道全通 + PMML 跨平台一致 | E2E + 跨语言校验 |
+| Phase 7 | 3 个集成通道全通 + PMML/ONNX 跨平台一致 | E2E + 415 单测 + 49 E2E + 跨语言校验 |
 
 ---
 
@@ -579,3 +617,4 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 - 2026-08-27：初版起草。Phase 1/2 只读摘要 + Phase 3–7 规划。来源：`CLAUDE.md` 已知问题、`config.py` 沙箱占位、`docs/DEPLOYMENT.md` 等保计划、`.env.example` 通知占位。
 - 2026-08-28：Phase 5 合规闭环 6 批次全部完工（B22–B27），新增 274 单元测试 + 61 E2E 验收，等保三级 6 项硬性要求 + PIPL 3 类用户权利全部落地。Commit 范围：`38a8ac5`..`7658d8a`。
 - 2026-08-28：Phase 6 租户超管 + 模板生态 4 批次全部完工（B28–B31），新增 102 单元测试 + 32 E2E 验收，RBAC 5×5×3 矩阵 + super_admin 跨租户后台 + 6 个行业模板市场 + 跨租户共享审核全部落地。Commit 范围：`4ebce12`..`1f8e35a`。
+- 2026-08-28：Phase 7 第三方集成 3 批次全部完工（B32–B34），新增 40 单元测试 + 17 E2E 验收，B32 通知通道复用 B23、B33 BI 报表导出 (CSV/NDJSON/Parquet + PowerBI/Tableau/FineBI + 4 DB 视图) + B34 模型导出 PMML/ONNX (跨平台一致性校验 < 1e-6) 全部落地。Commit 范围：`4fe0c47`..`f6d31a9`。
