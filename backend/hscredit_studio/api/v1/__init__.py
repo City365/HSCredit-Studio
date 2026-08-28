@@ -28,6 +28,7 @@ from hscredit_studio.api.v1 import (
     template_sharing,
     templates,
     usage,
+    webhooks,
     workflows,
     ws,
 )
@@ -55,6 +56,7 @@ __all__ = [
     "template_sharing",
     "templates",
     "usage",
+    "webhooks",
     "workflows",
     "ws",
 ]

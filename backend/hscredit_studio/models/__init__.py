@@ -134,6 +134,10 @@ from hscredit_studio.models.user import (
     USER_STATUS_VALUES,
     User,
 )
+from hscredit_studio.models.webhook import (  # Phase 8 B35
+    WebhookDelivery,
+    WebhookSubscription,
+)
 
 # 业务表
 from hscredit_studio.models.workflow import (
@@ -233,6 +237,8 @@ __all__ = [
     # 安全加固 (Phase 5 B25)
     "Vulnerability",
     # 工作流
+    "WebhookDelivery",  # Phase 8 B35
+    "WebhookSubscription",  # Phase 8 B35
     "Workflow",
     "WorkflowTemplate",
     "WorkflowVersion",

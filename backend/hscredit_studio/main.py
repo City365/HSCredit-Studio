@@ -33,6 +33,7 @@ from hscredit_studio.api.v1 import (
     template_sharing,
     templates,
     usage,
+    webhooks,
     workflows,
     ws,
 )
@@ -133,6 +134,11 @@ app.include_router(
     model_export.router,
     prefix="/api/v1/{tenant_slug}/model-export",
     tags=["模型导出"],
+)
+app.include_router(
+    webhooks.router,
+    prefix="/api/v1/{tenant_slug}/webhooks",
+    tags=["Webhook"],
 )
 app.include_router(ws.router, prefix="/ws", tags=["WebSocket"])
 
