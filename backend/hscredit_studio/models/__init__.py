@@ -65,6 +65,19 @@ from hscredit_studio.models.run import (
     NodeExecutionLog,
     Run,
 )
+
+# 安全加固 (Phase 5 B25)
+from hscredit_studio.models.security import (
+    ACCOUNT_LOCKOUT_STATUS_VALUES,
+    CHAIN_CHECKPOINT_STATUS_VALUES,
+    IP_RULE_TYPE_VALUES,
+    VULNERABILITY_SEVERITY_VALUES,
+    VULNERABILITY_STATUS_VALUES,
+    AccountLockout,
+    AuditChainCheckpoint,
+    IpAccessRule,
+    Vulnerability,
+)
 from hscredit_studio.models.template import (
     TEMPLATE_VISIBILITY_VALUES,
     Template,
@@ -96,11 +109,14 @@ from hscredit_studio.models.workflow import (
 )
 
 __all__ = [
+    "ACCOUNT_LOCKOUT_STATUS_VALUES",  # Phase 5 B25
     "BILL_STATUS_VALUES",
+    "CHAIN_CHECKPOINT_STATUS_VALUES",  # Phase 5 B25
     "CONTRACT_STATUS_VALUES",
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
     "INVOICE_STATUS_VALUES",
     "INVOICE_TYPE_VALUES",
+    "IP_RULE_TYPE_VALUES",  # Phase 5 B25
     "LOG_STREAM_VALUES",
     "MEMBER_ROLE_VALUES",
     "MEMBER_STATUS_VALUES",
@@ -116,8 +132,12 @@ __all__ = [
     "TENANT_STATUS_VALUES",
     "USER_STATUS_VALUES",
     "VISIBILITY_VALUES",
+    "VULNERABILITY_SEVERITY_VALUES",  # Phase 5 B25
+    "VULNERABILITY_STATUS_VALUES",  # Phase 5 B25
+    "AccountLockout",  # Phase 5 B25
     "ApiKey",
     # 审计
+    "AuditChainCheckpoint",  # Phase 5 B25
     "AuditEvent",
     # base mixin
     "Base",
@@ -127,6 +147,7 @@ __all__ = [
     "CustomNodeTestRun",
     "CustomNodeVersion",
     "Invoice",
+    "IpAccessRule",  # Phase 5 B25
     "ModelSerializerMixin",
     # 产物
     "NodeArtifact",
@@ -154,6 +175,8 @@ __all__ = [
     # 用户
     "User",
     "UserInvitation",
+    # 安全加固 (Phase 5 B25)
+    "Vulnerability",
     # 工作流
     "Workflow",
     "WorkflowTemplate",

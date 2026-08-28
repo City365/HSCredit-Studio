@@ -77,6 +77,27 @@ from hscredit_studio.schemas.run import (
     RunStatus,
     RunSubmitRequest,
 )
+
+# ----- 安全加固 (Phase 5 B25) -----
+from hscredit_studio.schemas.security import (
+    ChainCheckResponse,
+    IntrusionCheckRequest,
+    IntrusionCheckResponse,
+    IpAccessRuleCreate,
+    IpAccessRuleResponse,
+    IpCheckRequest,
+    IpCheckResponse,
+    LockoutStateResponse,
+    PasswordCheckResponse,
+    SecurityMetricsResponse,
+    SiemExportRequest,
+    SiemExportResponse,
+    ThreatHitInfo,
+    VulnerabilityCreate,
+    VulnerabilityResponse,
+    VulnerabilityStats,
+    VulnerabilityUpdate,
+)
 from hscredit_studio.schemas.usage import (
     DimensionUsage,
     NodeTypeUsage,
@@ -110,6 +131,8 @@ __all__ = [
     # node_contract
     "CacheConfig",
     "CacheStrategy",
+    # 安全加固 (Phase 5 B25)
+    "ChainCheckResponse",
     # 用量 (Phase 4 B18)
     "DimensionUsage",
     # workflow
@@ -119,6 +142,13 @@ __all__ = [
     # 数据脱敏 (Phase 5 B24)
     "FieldClassificationInfo",
     "IDSchema",
+    "IntrusionCheckRequest",
+    "IntrusionCheckResponse",
+    "IpAccessRuleCreate",
+    "IpAccessRuleResponse",
+    "IpCheckRequest",
+    "IpCheckResponse",
+    "LockoutStateResponse",
     # auth
     "LoginRequest",
     "LoginResponse",
@@ -144,6 +174,7 @@ __all__ = [
     "ParamChoice",
     "ParamSpec",
     "ParamType",
+    "PasswordCheckResponse",
     "PortSchema",
     "PortType",
     "RedactRequest",
@@ -156,11 +187,19 @@ __all__ = [
     "RunResponse",
     "RunStatus",
     "RunSubmitRequest",
+    "SecurityMetricsResponse",
+    "SiemExportRequest",
+    "SiemExportResponse",
     "SuccessResponse",
     "TenantUsageResponse",
+    "ThreatHitInfo",
     "TimestampedSchema",
     "TokenPair",
     "UserInfo",
+    "VulnerabilityCreate",
+    "VulnerabilityResponse",
+    "VulnerabilityStats",
+    "VulnerabilityUpdate",
     "WorkflowCreate",
     "WorkflowDefinition",
     "WorkflowExportRequest",

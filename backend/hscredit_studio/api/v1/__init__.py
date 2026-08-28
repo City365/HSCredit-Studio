@@ -5,6 +5,40 @@
 
 from __future__ import annotations
 
-from hscredit_studio.api.v1 import auth, health, nodes, runs, templates, workflows, ws
+from hscredit_studio.api.v1 import (
+    audit,
+    auth,
+    billing,
+    contracts,
+    data_classification,
+    health,
+    monitor,
+    nodes,
+    notifications,
+    quota,
+    runs,
+    security,
+    templates,
+    usage,
+    workflows,
+    ws,
+)
 
-__all__ = ["auth", "health", "nodes", "runs", "templates", "workflows", "ws"]
+__all__ = [
+    "audit",
+    "auth",
+    "billing",
+    "contracts",
+    "data_classification",
+    "health",
+    "monitor",
+    "nodes",
+    "notifications",
+    "quota",
+    "runs",
+    "security",
+    "templates",
+    "usage",
+    "workflows",
+    "ws",
+]
