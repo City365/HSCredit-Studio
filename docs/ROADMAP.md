@@ -465,6 +465,34 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 
 ---
 
+### ✅ Phase 6 完工验收 (2026-08-28)
+
+| 批次 | 主题 | Commit | 单元测试 | E2E 验收 |
+|------|------|--------|----------|----------|
+| B28 | RBAC 细化 (5 角色 × 5 资源 × 3 动作矩阵 + 后间强制) | `4ebce12` | 48 | 9/9 |
+| B29 | 租户超管后台 (跨租户仪表板 + 状态/迁移/角色变更) | `e54b65b` | 13 | 9/9 |
+| B30 | 模板市场 (6 个行业评分卡模板 + 一键实例化 + 评分) | `9a8f60a` | 29 | 8/8 |
+| **B31** | **自定义模板共享 (Workflow→Template + 审核状态机 + 跨租户白名单)** | **`1f8e35a`** | **11** | **6/6** |
+
+**Phase 6 累计**: 375/375 单元测试 ✅ · 32/32 E2E 验收 ✅ · `make backend-lint` All checks passed ✅
+
+**新增能力覆盖矩阵**:
+
+| 维度 | 落地能力 | 验证方法 |
+|------|----------|----------|
+| **RBAC** | 5 角色 × 5 资源 × 3 动作矩阵; require_permission 后间强制 | viewer POST /workflows → 403 |
+| **跨租户超管** | 全平台仪表板 + 租户状态 + 迁移 + 角色变更审计 | viewer /admin/overview → 403 |
+| **行业模板市场** | 银行信用卡/消金/助贷/现金贷/电商分期/汽车金融 (6 个) | 银行信用卡 → 12 节点实例化 |
+| **模板共享 + 审核** | draft/pending/approved/rejected 状态机 + 共享白名单 | viewer 发布/analyst 审核 → 403 |
+
+**新增表 / 迁移**:
+- `role_policies` + `user_role_audit` (B28)
+- `users.is_super_admin` (B29 补充迁移 0010)
+- `templates.review_status / rejection_reason / shared_with_tenants / source_workflow_id` (B31)
+- `template_review_logs` (B31)
+
+---
+
 ## 8. Phase 7 — 第三方集成
 
 **目标**：让平台可嵌入客户的工具生态，降低使用摩擦。
@@ -542,7 +570,7 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 | Phase 3 | B14–B17 4 批全过 + 沙箱故障注入测试 100% | `scripts/e2e/run_e2e_phase3.py` |
 | Phase 4 | B18–B21 4 批全过 + 模拟客户走完计费周期 | `scripts/e2e/run_e2e_phase4.py` |
 | Phase 5 | 等保三级测评通过 + PIPL 权利全实现 + 274 单元测试 + 61 E2E | 第三方测评报告 + 自动化权利测试 |
-| Phase 6 | super_admin 可管理 50 个租户 + 6 个行业模板 | E2E + UAT |
+| Phase 6 | super_admin 可管理 50 个租户 + 6 个行业模板 + 跨租户共享 | 375 单测 + 32 E2E + UAT |
 | Phase 7 | 3 个集成通道全通 + PMML 跨平台一致 | E2E + 跨语言校验 |
 
 ---
@@ -550,3 +578,4 @@ Phase 1 (已完成)  ──▶  Phase 2 (已完成)  ──▶  Phase 3 (节点�
 **变更记录**：
 - 2026-08-27：初版起草。Phase 1/2 只读摘要 + Phase 3–7 规划。来源：`CLAUDE.md` 已知问题、`config.py` 沙箱占位、`docs/DEPLOYMENT.md` 等保计划、`.env.example` 通知占位。
 - 2026-08-28：Phase 5 合规闭环 6 批次全部完工（B22–B27），新增 274 单元测试 + 61 E2E 验收，等保三级 6 项硬性要求 + PIPL 3 类用户权利全部落地。Commit 范围：`38a8ac5`..`7658d8a`。
+- 2026-08-28：Phase 6 租户超管 + 模板生态 4 批次全部完工（B28–B31），新增 102 单元测试 + 32 E2E 验收，RBAC 5×5×3 矩阵 + super_admin 跨租户后台 + 6 个行业模板市场 + 跨租户共享审核全部落地。Commit 范围：`4ebce12`..`1f8e35a`。
