@@ -1,7 +1,7 @@
 /** 通知配置 — Phase 5 B23. */
 import { useEffect, useState } from 'react';
 import { Card, Tabs, Table, Tag, Button, Form, Input, Select, App } from 'antd';
-import {  SendOutlined } from '@ant-design/icons';
+import { SendOutlined } from '@ant-design/icons';
 import {
   notificationsApi,
   type NotificationConfig,
@@ -22,24 +22,28 @@ export function NotificationsPage(): React.ReactElement {
         notificationsApi.listConfigs(),
         notificationsApi.listLogs(),
       ]);
-      setTemplates(t.items);
-      setConfigs(c.items);
-      setLogs(l.items);
+      setTemplates(t ?? []);
+      setConfigs(c ?? []);
+      setLogs(l ?? []);
     } catch (e) {
       message.error('加载失败: ' + (e as Error).message);
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const onTest = async (values: { template_key: string; recipient: string }): Promise<void> => {
     try {
       const r = await notificationsApi.sendTest({
         template_key: values.template_key,
+        channel: 'email',
         recipient: values.recipient,
-        dry_run: false,
+        dry_run: true,
       });
-      message.success(`已发送: ${r.results.length} 个通道, 成功 ${r.results.filter((x) => x.success).length}`);
+      const successCount = (r.results ?? []).filter((x) => x.success).length;
+      message.success(`已发送: ${successCount}/${(r.results ?? []).length} 个通道成功`);
     } catch (e) {
       message.error('发送失败: ' + (e as Error).message);
     }
@@ -60,12 +64,18 @@ export function NotificationsPage(): React.ReactElement {
                 pagination={false}
                 columns={[
                   { title: '通道', dataIndex: 'channel', render: (v) => <Tag>{v}</Tag> },
-                  { title: '接收方', dataIndex: 'recipient' },
-                  { title: '事件', dataIndex: 'events', render: (e: string[]) => e.join(', ') || '全部' },
+                  { title: '模板', dataIndex: 'template_key', render: (v) => v ?? '全部' },
+                  { title: '接收方', dataIndex: 'recipient', render: (v) => v ?? '—' },
                   {
                     title: '启用',
-                    dataIndex: 'active',
-                    render: (a: boolean) => a ? <Tag color="success">是</Tag> : <Tag>否</Tag>,
+                    dataIndex: 'enabled',
+                    render: (a: boolean) =>
+                      a ? <Tag color="success">是</Tag> : <Tag>否</Tag>,
+                  },
+                  {
+                    title: '创建时间',
+                    dataIndex: 'created_at',
+                    render: (t?: string) => (t ? new Date(t).toLocaleString('zh-CN') : '—'),
                   },
                 ]}
               />
@@ -83,9 +93,13 @@ export function NotificationsPage(): React.ReactElement {
                 pagination={false}
                 columns={[
                   { title: 'Key', dataIndex: 'key' },
-                  { title: '标题', dataIndex: 'title_template', ellipsis: true },
-                  { title: '正文', dataIndex: 'body_template', ellipsis: true },
-                  { title: '默认通道', dataIndex: 'default_channels', render: (c: string[]) => c.join(', ') },
+                  { title: '标题模板', dataIndex: 'title_template', ellipsis: true },
+                  { title: '正文模板', dataIndex: 'body_template', ellipsis: true },
+                  {
+                    title: '默认通道',
+                    dataIndex: 'default_channels',
+                    render: (c: string[]) => (c ?? []).join(', '),
+                  },
                 ]}
               />
             </Card>
@@ -103,15 +117,20 @@ export function NotificationsPage(): React.ReactElement {
                 columns={[
                   { title: '模板', dataIndex: 'template_key' },
                   { title: '通道', dataIndex: 'channel' },
-                  { title: '接收方', dataIndex: 'recipient' },
+                  { title: '标题', dataIndex: 'title', ellipsis: true },
+                  { title: '接收方', dataIndex: 'recipient', render: (v) => v ?? '—' },
                   {
                     title: '状态',
                     dataIndex: 'status',
-                    render: (s: string) => <Tag color={s === 'success' ? 'success' : 'error'}>{s}</Tag>,
+                    render: (s: string) => (
+                      <Tag color={s === 'success' || s === 'dry_run' ? 'success' : 'error'}>
+                        {s}
+                      </Tag>
+                    ),
                   },
                   {
                     title: '发送时间',
-                    dataIndex: 'sent_at',
+                    dataIndex: 'created_at',
                     render: (t: string) => new Date(t).toLocaleString('zh-CN'),
                   },
                   { title: '错误', dataIndex: 'error', ellipsis: true },
@@ -127,9 +146,7 @@ export function NotificationsPage(): React.ReactElement {
             <Card>
               <Form layout="vertical" onFinish={onTest} style={{ maxWidth: 600 }}>
                 <Form.Item name="template_key" label="模板" rules={[{ required: true }]}>
-                  <Select
-                    options={templates.map((t) => ({ label: t.key, value: t.key }))}
-                  />
+                  <Select options={(templates ?? []).map((t) => ({ label: t.key, value: t.key }))} />
                 </Form.Item>
                 <Form.Item name="recipient" label="接收方" rules={[{ required: true }]}>
                   <Input placeholder="邮箱 / webhook URL" />
