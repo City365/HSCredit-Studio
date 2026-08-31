@@ -9,7 +9,7 @@
  */
 
 import { Layout, Dropdown, Avatar, Space, Typography } from 'antd';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   UserOutlined,
@@ -22,10 +22,35 @@ import { Sidebar } from './Sidebar';
 
 const { Header, Sider, Content } = Layout;
 
+/** 与 Sidebar.tsx 中 menu item 的 key 完全一致 — 选中态需要精确匹配. */
+const MENU_KEYS: readonly string[] = [
+  '/workflows',
+  '/runs',
+  '/templates',
+  '/monitor',
+  '/models',
+  '/audit',
+  '/bi-exports',
+  '/model-export',
+  '/webhooks',
+  '/industry-templates',
+  '/template-sharing',
+  '/billing',
+  '/contracts',
+  '/admin',
+  '/notifications',
+  '/alerts',
+  '/security',
+  '/pipl',
+  '/data-classification',
+  '/rbac',
+  '/quota',
+];
+
 export function AppLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = window.location;
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const tenantSlug = useAuthStore((s) => s.tenantSlug);
   const role = useAuthStore((s) => s.role);
@@ -52,12 +77,14 @@ export function AppLayout() {
     },
   ];
 
-  // 从当前 URL 路径推断 Sidebar 选中项（取最长前缀匹配）
+  // 从当前 URL 路径推断 Sidebar 选中项：精确匹配优先, 否则取最长前缀匹配.
   const selectedKey = ((): string => {
     const path = location.pathname;
-    const candidates = ['/workflows', '/runs', '/templates', '/monitor', '/models', '/audit'];
-    for (const c of candidates) {
-      if (path === c || path.startsWith(`${c}/`)) return c;
+    const exact = MENU_KEYS.find((k) => path === k);
+    if (exact) return exact;
+    const prefixMatches = MENU_KEYS.filter((k) => path.startsWith(`${k}/`));
+    if (prefixMatches.length > 0) {
+      return prefixMatches.reduce((a, b) => (a.length >= b.length ? a : b));
     }
     return '/workflows';
   })();
