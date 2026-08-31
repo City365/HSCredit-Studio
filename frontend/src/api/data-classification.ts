@@ -9,7 +9,7 @@ export interface FieldClassification {
 
 export const dataClassificationApi = {
   listFields: async () =>
-    (await apiClient.get<{ items: FieldClassification[]; total: number }>('')).data,
+    (await apiClient.get<{ items: FieldClassification[]; total: number }>('/data-classification/fields')).data,
 
   redact: async (data: { payload: Record<string, unknown>; fields?: string[] }) =>
     (await apiClient.post<{

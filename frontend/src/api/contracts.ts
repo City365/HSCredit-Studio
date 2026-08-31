@@ -17,14 +17,14 @@ export const contractsApi = {
     (await apiClient.get<{ items: unknown[]; total: number }>('/templates')).data,
 
   list: async () =>
-    (await apiClient.get<{ items: Contract[]; total: number }>('')).data,
+    (await apiClient.get<{ items: Contract[]; total: number }>('/contracts')).data,
 
   apply: async (data: {
     contract_type: string;
     valid_from: string;
     valid_until: string;
   }) =>
-    (await apiClient.post<Contract>('', data)).data,
+    (await apiClient.post<Contract>('/contracts', data)).data,
 
   get: async (id: string) =>
     (await apiClient.get<Contract>(`/${id}`)).data,

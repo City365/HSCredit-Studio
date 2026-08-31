@@ -28,7 +28,8 @@ import type { ErrorResponse, NormalizedApiError } from '@/types';
  */
 function readApiBaseUrl(): string {
   const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env;
-  return env?.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+  // 优先级: VITE_API_BASE_URL → 默认绝对地址 (开发环境直接连 8003, 避免 vite proxy 失败)
+  return env?.VITE_API_BASE_URL ?? 'http://localhost:8003/api/v1';
 }
 
 const API_BASE_URL: string = readApiBaseUrl();

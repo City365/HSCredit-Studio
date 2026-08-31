@@ -12,13 +12,17 @@ export function QuotaPage(): React.ReactElement {
   const [usage, setUsage] = useState<TenantUsage | null>(null);
 
   const load = async (): Promise<void> => {
-    try {
-      const [q, u] = await Promise.all([quotaApi.get(), usageApi.get()]);
-      setQuota(q);
-      setUsage(u);
-    } catch (e) {
-      message.error('加载失败: ' + (e as Error).message);
+    // 分离调用: quota 与 usage 独立加载,任一失败不影响另一个.
+    const results = await Promise.allSettled([quotaApi.get(), usageApi.get()]);
+    if (results[0].status === 'fulfilled') {
+      setQuota(results[0].value);
+    } else {
+      message.error('配额加载失败: ' + results[0].reason);
     }
+    if (results[1].status === 'fulfilled') {
+      setUsage(results[1].value);
+    }
+    // usage 端点 404 在本地 dev 偶尔发生, 不阻塞主页面
   };
 
   useEffect(() => {
@@ -120,13 +124,13 @@ export function QuotaPage(): React.ReactElement {
       )}
 
       {/* 聚合用量 */}
-      {usage && (
+      {usage && Object.keys(usage).length > 0 && (
         <Card title="本月聚合用量">
           <Row gutter={16}>
-            <Col span={6}><Statistic title="Run 总数" value={usage.runs} /></Col>
-            <Col span={6}><Statistic title="累计时长" value={`${(usage.duration_ms / 1000).toFixed(1)} 秒`} /></Col>
-            <Col span={6}><Statistic title="累计存储" value={`${(usage.storage_bytes / 1024 / 1024).toFixed(2)} MB`} /></Col>
-            <Col span={6}><Statistic title="API 调用" value={usage.api_calls} /></Col>
+            <Col span={6}><Statistic title="Run 总数" value={typeof usage.runs === 'number' ? usage.runs : 0} /></Col>
+            <Col span={6}><Statistic title="累计时长" value={`${(Number(usage.duration_ms ?? 0) / 1000).toFixed(1)} 秒`} /></Col>
+            <Col span={6}><Statistic title="累计存储" value={`${(Number(usage.storage_bytes ?? 0) / 1024 / 1024).toFixed(2)} MB`} /></Col>
+            <Col span={6}><Statistic title="API 调用" value={typeof usage.api_calls === 'number' ? usage.api_calls : 0} /></Col>
           </Row>
           {Object.keys(usage.by_node_type ?? {}).length > 0 && (
             <Card type="inner" title="按节点类型分布" style={{ marginTop: 16 }}>

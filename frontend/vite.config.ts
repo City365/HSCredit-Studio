@@ -13,8 +13,8 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
-    // 注意：proxy 在某些环境下 ECONNREFUSED，前端走 VITE_API_BASE_URL 直连后端
-    // （依赖后端 CORS 允许 http://localhost:3000）
+    // 不配 proxy: 客户端 axios baseURL 是绝对地址 http://localhost:8003/api/v1
+    // 直接由浏览器 fetch, 依赖后端 CORS 允许 http://localhost:3000 (已配置)
   },
   build: {
     outDir: 'dist',

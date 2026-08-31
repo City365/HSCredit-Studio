@@ -20,10 +20,10 @@ export interface Bill {
 
 export const billingApi = {
   list: async () =>
-    (await apiClient.get<{ items: Bill[]; total: number }>('')).data,
+    (await apiClient.get<{ items: Bill[]; total: number }>('/bills')).data,
 
   generate: async (data: { billing_period: string }) =>
-    (await apiClient.post<Bill>('', data)).data,
+    (await apiClient.post<Bill>('/bills', data)).data,
 
   get: async (id: string) =>
     (await apiClient.get<Bill>(`/${id}`)).data,

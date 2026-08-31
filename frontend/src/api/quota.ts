@@ -37,10 +37,10 @@ export interface TenantUsage {
 
 export const quotaApi = {
   get: async () =>
-    (await apiClient.get<QuotaResponse>('')).data,
+    (await apiClient.get<QuotaResponse>('/quota')).data,
 };
 
 export const usageApi = {
   get: async (params?: { since?: string; until?: string }) =>
-    (await apiClient.get<TenantUsage>('', { params })).data,
+    (await apiClient.get<TenantUsage>('/usage', { params })).data,
 };
