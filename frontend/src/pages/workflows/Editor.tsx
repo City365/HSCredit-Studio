@@ -29,7 +29,7 @@ import {
   type EdgeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Layout, Button, Space, message, Drawer, Typography, Tag, Spin } from 'antd';
+import { Layout, Button, Space, message, Drawer, Typography, Tag, Spin, Input } from 'antd';
 import { SaveOutlined, PlayCircleOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { workflowsApi } from '@/api/workflows';
