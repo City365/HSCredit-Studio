@@ -26,13 +26,21 @@ export const industryTemplatesApi = {
   get: async (id: string) =>
     (await apiClient.get<IndustryTemplateDetail>(`/industry-templates/${id}`)).data,
 
-  instantiate: async (data: { template_id: string; workflow_name?: string; tenant_id?: string }) =>
-    (await apiClient.post<{
+  /** 一键实例化 — 后端返回 template_name + node_count + edge_count. */
+  instantiate: async (data: { template_id: string; workflow_name?: string }) => {
+    const { template_id, workflow_name } = data;
+    void template_id; // template_id already in path
+    const r = await apiClient.post<{
+      template_id: string;
+      template_name: string;
       workflow_id: string;
       workflow_name: string;
-      nodes_count: number;
-      status: string;
-    }>('/industry-templates/instantiate', data)).data,
+      node_count: number;
+      edge_count: number;
+      created_at: string;
+    }>(`/industry-templates/${template_id}/instantiate`, { workflow_name });
+    return r.data;
+  },
 
   rate: async (id: string, data: { score: number; comment?: string }) =>
     (await apiClient.post(`/industry-templates/${id}/rate`, data)).data,
