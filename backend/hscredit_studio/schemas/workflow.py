@@ -101,12 +101,19 @@ class WorkflowDefinition(BaseModel):
         react-flow 视口位置 ``{x, y, zoom}``，可空。
     metadata:
         自由 metadata（如注释、模板来源）。
+    target_column:
+        工作流级目标特征名（Phase 6 B30 统一管理）。节点级 ``params.target`` 已弃用，
+        优先使用本字段；executor 会在节点运行时把本字段注入到 params 以保持向后兼容。
     """
 
     nodes: list[NodeDef] = Field(default_factory=list, description="节点列表")
     edges: list[EdgeDef] = Field(default_factory=list, description="边列表")
     viewport: dict[str, float] | None = Field(default=None, description="视口位置 {x, y, zoom}")
     metadata: dict[str, Any] | None = Field(default=None, description="自由 metadata")
+    target_column: str | None = Field(
+        default=None,
+        description="工作流级目标特征名 — 所有节点的统一目标特征",
+    )
 
 
 # ===== CRUD =====

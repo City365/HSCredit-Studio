@@ -66,6 +66,25 @@ def _compute_input_hash(params: dict[str, Any], input_metadata: dict[str, Any]) 
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+async def _get_workflow_target_column(session, run: Run) -> str | None:
+    """从 Run 关联的 WorkflowVersion.definition 中提取工作流级 target_column.
+
+    Phase 6 B30 统一目标特征: 工作流定义里 ``target_column`` 是单一事实来源,
+    各节点的 ``params.target`` 已被 ``workflow_scoped=True`` 标记,
+    executor 会自动从此处注入.
+    """
+    from hscredit_studio.models import WorkflowVersion
+
+    if not run.workflow_version_id:
+        return None
+    ver = await session.get(WorkflowVersion, run.workflow_version_id)
+    if ver is None:
+        return None
+    defn = ver.definition or {}
+    tc = defn.get("target_column")
+    return tc if isinstance(tc, str) and tc else None
+
+
 @celery_app.task(
     name="hscredit_studio.executor.tasks.run_node",
     bind=True,
@@ -162,8 +181,20 @@ async def _run_node_async(node_exec_id: UUID) -> dict[str, Any]:
             inputs = await _load_inputs(session, ne)
             input_meta = {k: str(type(v).__name__) for k, v in inputs.items()}
 
-            # 2. 缓存检查
+            # 2. 缓存检查 + 工作流级 target_column 注入
             params = ne.params or {}
+            # Phase 6 B30: 若工作流定义有 target_column 且 params.target 缺失, 注入之.
+            # 这样所有节点 (IV/WOE/Logistic/XGBoost/ScoreCard...) 共用同一个目标特征,
+            # 避免每个节点都重复定义 target 参数.
+            if "target" not in params or not params["target"]:
+                wf_target = await _get_workflow_target_column(session, run)
+                if wf_target:
+                    params = {**params, "target": wf_target}
+                    _log.info(
+                        "workflow_target_injected",
+                        node_type=ne.node_type,
+                        target_column=wf_target,
+                    )
             input_hash = _compute_input_hash(params, input_meta)
             cache = await get_cache_client()
             cache_key = CacheKeyGenerator.node_input_key(

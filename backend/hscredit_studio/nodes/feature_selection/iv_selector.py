@@ -38,7 +38,7 @@ class IVSelectorNode(BaseNode):
             PortSchema(name="selected_df", type="DataFrame", description="筛选后的 DataFrame"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(
                 name="threshold",
                 type="float",

@@ -48,7 +48,7 @@ class XGBoostNode(BaseNode):
             ),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="features", type="list", label="特征列表", required=True),
             ParamSpec(name="n_estimators", type="int", label="树数量 (boosting rounds)", default=300, min=10, max=5000),
             ParamSpec(name="max_depth", type="int", label="树最大深度", default=6, min=2, max=20),

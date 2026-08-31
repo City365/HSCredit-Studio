@@ -53,7 +53,7 @@ class WOEEncoderNode(BaseNode):
         ],
         params=[
             ParamSpec(name="features", type="list", label="要编码的特征列表", required=True),
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(
                 name="drop_invariant",
                 type="bool",

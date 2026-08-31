@@ -54,7 +54,7 @@ class ModelReportNode(BaseNode):
             PortSchema(name="report_path", type="Excel", description="Excel 报告路径"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="训练目标列名", required=True),
+            ParamSpec(name="target", type="str", label="训练目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="features", type="list", label="训练特征列表", required=True),
             ParamSpec(
                 name="target_test",

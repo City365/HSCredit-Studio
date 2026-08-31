@@ -65,6 +65,8 @@ function EditorInner() {
   const [selectedNode, setSelectedNode] = useState<Node<NodeCardData, 'hscredit'> | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [workflowName] = useState('新建工作流');
+  // 工作流级目标特征 — 统一管理, 避免每个节点重复定义 target.
+  const [targetColumn, setTargetColumn] = useState<string>('');
 
   // 编辑模式：加载工作流
   const { data: workflow } = useApiQuery(['workflow', id], workflowsApi.get, id ?? '', {
@@ -84,6 +86,7 @@ function EditorInner() {
 
   useEffect(() => {
     if (!workflow) return;
+    setTargetColumn(workflow.definition?.target_column ?? '');
     const def = workflow.definition;
     if (def) {
       setNodes(
@@ -255,6 +258,8 @@ function EditorInner() {
         source_handle: e.sourceHandle ?? null,
         target_handle: e.targetHandle ?? null,
       })),
+      // 工作流级目标特征 — 单一事实来源.
+      target_column: targetColumn.trim() || null,
     };
     saveMutation.mutate(def);
   };
@@ -272,11 +277,13 @@ function EditorInner() {
     },
   );
 
-  // 抽屉中的节点参数规格：直接从后端 contract.params 取（替换硬编码空数组）
+  // 抽屉中的节点参数规格：直接从后端 contract.params 取（过滤掉工作流级字段）.
   const selectedParams: ParamSpec[] = useMemo(() => {
     if (!selectedNode) return [];
     const def = contractByType[selectedNode.data.node_type];
-    return (def?.contract?.params as ParamSpec[] | undefined) ?? [];
+    const all = (def?.contract?.params as ParamSpec[] | undefined) ?? [];
+    // 过滤掉 workflow_scoped=true 的字段 (如 target) — 这些由工作流顶部统一管理.
+    return all.filter((p) => !p.workflow_scoped);
   }, [selectedNode, contractByType]);
 
   const selectedParamValues: Record<string, unknown> = useMemo(() => {
@@ -338,7 +345,28 @@ function EditorInner() {
       </Sider>
       <Content style={{ position: 'relative', background: '#fff' }}>
         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
-          <Space>
+          <Space size="middle">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: '#fafafa',
+                border: '1px solid #d9d9d9',
+                borderRadius: 4,
+                padding: '0 8px',
+              }}
+            >
+              <span style={{ color: '#666', fontSize: 12, marginRight: 6 }}>
+                🎯 目标特征
+              </span>
+              <Input
+                size="small"
+                placeholder="如 FPD"
+                value={targetColumn}
+                onChange={(e) => setTargetColumn(e.target.value)}
+                style={{ width: 100, border: 'none', boxShadow: 'none', background: 'transparent' }}
+              />
+            </div>
             <Button icon={<FolderOpenOutlined />} onClick={() => navigate('/workflows')}>
               返回列表
             </Button>

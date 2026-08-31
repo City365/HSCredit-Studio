@@ -41,7 +41,7 @@ class TrainOOTSplitNode(BaseNode):
             PortSchema(name="oot_df", type="DataFrame", description="OOT 集（跨时间验证集）"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列", required=True),
+            ParamSpec(name="target", type="str", label="目标列", required=True, workflow_scoped=True),
             ParamSpec(
                 name="test_size",
                 type="float",

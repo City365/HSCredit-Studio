@@ -47,7 +47,7 @@ class OptimalBinningChiNode(BaseNode):
         ],
         params=[
             ParamSpec(name="feature", type="str", label="特征列名", required=True),
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="min_n_bins", type="int", label="最少分箱数", default=2, min=2, max=10),
             ParamSpec(
                 name="max_n_bins",

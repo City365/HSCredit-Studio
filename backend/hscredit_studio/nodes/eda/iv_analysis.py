@@ -124,7 +124,7 @@ class IVAnalysisNode(BaseNode):
             PortSchema(name="df", type="DataFrame", description="原始 DataFrame"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(
                 name="features",
                 type="list",

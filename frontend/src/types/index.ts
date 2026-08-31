@@ -111,6 +111,8 @@ export interface WorkflowDefinition {
   edges: EdgeDef[];
   viewport?: ViewportState | null;
   metadata?: Record<string, unknown> | null;
+  /** 工作流级目标特征 — 统一管理, 避免每个节点重复定义 target. */
+  target_column?: string | null;
 }
 
 /** ---------- 工作流资源 ---------- */
@@ -289,6 +291,8 @@ export interface ParamSpec {
   depends_on?: string[];
   placeholder?: string | null;
   help_url?: string | null;
+  /** 工作流级字段标记: 若为 true, 前端隐藏该参数, 改为在工作流顶部统一输入. */
+  workflow_scoped?: boolean;
 }
 
 export type CacheStrategy = 'by_inputs_hash' | 'by_params_hash' | 'none';

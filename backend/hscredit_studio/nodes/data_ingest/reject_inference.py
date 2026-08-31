@@ -61,7 +61,7 @@ class RejectInferenceNode(BaseNode):
             PortSchema(name="inference_stats", type="JSON", description="推断统计 (各分箱推断坏率)"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(
                 name="method",
                 type="str",

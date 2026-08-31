@@ -191,6 +191,14 @@ class ParamSpec(BaseModel):
     depends_on: list[str] = Field(default_factory=list, description="依赖的其他参数名")
     placeholder: str | None = Field(default=None, max_length=128, description="占位符")
     help_url: str | None = Field(default=None, max_length=512, description="帮助文档 URL")
+    workflow_scoped: bool = Field(
+        default=False,
+        description=(
+            "标记此参数由工作流级别统一管理 (如 target). "
+            "前端应隐藏此字段, 而在顶部 WorkflowPanel 显示一个统一输入框; "
+            "executor 会在执行时把工作流级 target_column 注入到 params[name]."
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_constraints(self) -> ParamSpec:

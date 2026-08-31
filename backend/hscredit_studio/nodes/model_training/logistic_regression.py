@@ -43,7 +43,7 @@ class LogisticRegressionNode(BaseNode):
             PortSchema(name="metrics", type="JSON", description="训练集评估指标字典"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="features", type="list", label="特征列表", required=True),
             ParamSpec(
                 name="C",

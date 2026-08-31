@@ -229,7 +229,7 @@ async def list_bi_views_endpoint(
 )
 async def powerbi_template_endpoint(
     _: CurrentUserDep,
-    tenant_slug: str = Query(default="demo", description="租户 slug"),
+    tenant_slug: str = Path(..., description="租户 slug"),
     tenant_uuid: UUID = Query(..., description="租户 UUID"),
     base_url: str = Query(default="http://localhost:8003", description="平台 base URL"),
 ) -> PowerBITemplateResponse:
@@ -258,7 +258,7 @@ async def powerbi_template_endpoint(
 )
 async def tableau_template_endpoint(
     _: CurrentUserDep,
-    tenant_slug: str = Query(default="demo", description="租户 slug"),
+    tenant_slug: str = Path(..., description="租户 slug"),
     tenant_uuid: UUID = Query(..., description="租户 UUID"),
     server: str = Query(default="localhost"),
     port: int = Query(default=5432, ge=1, le=65535),
@@ -292,7 +292,7 @@ async def tableau_template_endpoint(
 )
 async def finebi_template_endpoint(
     _: CurrentUserDep,
-    tenant_slug: str = Query(default="demo", description="租户 slug"),
+    tenant_slug: str = Path(..., description="租户 slug"),
     tenant_uuid: UUID = Query(..., description="租户 UUID"),
 ) -> FineBITemplateResponse:
     raw = svc.generate_finebi_template(

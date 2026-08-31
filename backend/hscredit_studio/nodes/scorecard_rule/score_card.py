@@ -81,7 +81,7 @@ class ScoreCardNode(BaseNode):
             ),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="features", type="list", label="特征列表", required=True),
             ParamSpec(
                 name="pdo",

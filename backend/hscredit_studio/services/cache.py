@@ -47,6 +47,9 @@ async def get_cache_client() -> aioredis.Redis:
             max_connections=20,
             socket_timeout=5,
             socket_connect_timeout=3,
+            # 强制 RESP2 协议: Redis 5.x 不支持 HELLO 3 命令,
+            # redis-py 5.x 默认 RESP3 会触发 unknown command 'HELLO' 错误.
+            protocol=2,
         )
         _log.info("redis_connected", url=settings.redis_url)
     return _client

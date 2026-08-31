@@ -49,7 +49,7 @@ class ShapExplanationNode(BaseNode):
             PortSchema(name="summary_path", type="PNG", description="摘要图本地路径"),
         ],
         params=[
-            ParamSpec(name="target", type="str", label="目标列名", required=True),
+            ParamSpec(name="target", type="str", label="目标列名", required=True, workflow_scoped=True),
             ParamSpec(name="features", type="list", label="特征列表", required=True),
             ParamSpec(
                 name="max_samples",
