@@ -33,7 +33,7 @@ export interface CrossBorderTransfer {
 
 export const piplApi = {
   listMyConsents: async () =>
-    (await apiClient.get<{ items: ConsentRecord[]; total: number }>('/consents')).data,
+    (await apiClient.get<{ items: ConsentRecord[]; total: number }>('/consent')).data,
 
   grantConsent: async (data: { purpose: string }) =>
     (await apiClient.post<ConsentRecord>('/consents/grant', data)).data,
