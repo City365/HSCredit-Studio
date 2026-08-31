@@ -3,11 +3,13 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import ORJSONResponse
 from prometheus_client import make_asgi_app
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 from hscredit_studio.api.exception_handlers import register_exception_handlers
 from hscredit_studio.api.v1 import (
@@ -38,11 +40,13 @@ from hscredit_studio.api.v1 import (
     ws,
 )
 from hscredit_studio.core.config import settings
+from hscredit_studio.core.database import async_session_maker
 from hscredit_studio.core.logging import setup_logging
 from hscredit_studio.middleware.rate_limit import RateLimitMiddleware
 from hscredit_studio.middleware.request_id import RequestIDMiddleware
 from hscredit_studio.middleware.security import SecurityHeadersMiddleware
 from hscredit_studio.middleware.tenant import TenantMiddleware
+from hscredit_studio.services.template import ensure_system_templates
 
 # 初始化日志
 setup_logging(settings.log_level)
@@ -55,7 +59,13 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 HSCredit Workflow 启动中...")
     logger.info(f"   环境: {settings.environment}")
     logger.info(f"   调试: {settings.debug}")
-    # 启动时初始化：数据库连接池、Redis、节点注册表等
+    # 启动时植入系统模板 (Phase 6 B30 行业模板 + 评分卡/规则/监控)
+    try:
+        async with async_session_maker() as session:
+            await ensure_system_templates(session)
+        logger.info("✅ 系统模板已就绪 (评分卡/规则/监控/6 个行业模板)")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"⚠️  ensure_system_templates 失败: {e}")
     yield
     logger.info("👋 HSCredit Workflow 关闭中...")
 
@@ -77,19 +87,67 @@ register_exception_handlers(app)
 
 # 中间件（顺序：最后添加的最先执行）
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-app.add_middleware(RateLimitMiddleware)  # 速率限制 (越外层越先执行)
+# RateLimitMiddleware 暂时禁用: 本地 Redis 5.0.14 不支持 RESP3 HELLO 命令,
+# 客户端 redis-py 5.x 默认发 HELLO 导致每个请求报错 (rate_limit_check_failed).
+# TODO: 升级 Redis 至 6.2+ 或在 service 层指定 RESP2 协议
+# app.add_middleware(RateLimitMiddleware)  # 速率限制 (越外层越先执行)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TenantMiddleware)
 app.add_middleware(RequestIDMiddleware)
 
-# CORS
+# CORS (开发环境允许任意 origin, 含 127.0.0.1 / 内网 IP)
+_cors_origins = settings.cors_allowed_origins if settings.environment != "development" else ["*"]
+
+
+class CORSAlwaysMiddleware(BaseHTTPMiddleware):
+    """最外层 CORS 中间件 — 确保即使内部 middleware 抛异常, 响应也含 CORS 头.
+
+    普通 CORSMiddleware 仅在正常响应时添加头, 异常被上层 handler 捕获后,
+    响应可能不带 CORS 头 → 浏览器报 "blocked by CORS policy".
+    本 middleware 在响应发出的最后一刻注入头, 解决该问题.
+    """
+
+    def __init__(self, app: ASGIApp, allowed_origins: list[str]) -> None:
+        super().__init__(app)
+        self.allowed_origins = allowed_origins
+
+    async def dispatch(self, request: Request, call_next):  # type: ignore[no-untyped-def]
+        origin = request.headers.get("origin")
+        # 即使下游抛异常被 ExceptionMiddleware 兜底, 此处也作为最外层运行
+        try:
+            response = await call_next(request)
+        except Exception:
+            # 兜底: 内部完全未捕获的异常, 返回 500 + CORS 头
+            response = ORJSONResponse(
+                {"code": "E_INTERNAL", "message": "服务器内部错误"},
+                status_code=500,
+            )
+        if origin and ("*" in self.allowed_origins or origin in self.allowed_origins):
+            response.headers["Access-Control-Allow-Origin"] = (
+                "*" if "*" in self.allowed_origins else origin
+            )
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = (
+                "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            )
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Authorization, Content-Type, X-Request-ID"
+            )
+            response.headers["Vary"] = "Origin"
+        return response
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_origins=_cors_origins,
+    allow_credentials=settings.environment != "development",  # dev 关掉 credentials 才能用 *
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+    expose_headers=["X-Request-ID"],
+    max_age=600,
 )
+# 必须最后添加 → Starlette 反转顺序, 最后 add 的最外层
+app.add_middleware(CORSAlwaysMiddleware, allowed_origins=_cors_origins)
 
 # Prometheus 指标
 metrics_app = make_asgi_app()
