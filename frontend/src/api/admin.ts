@@ -25,20 +25,20 @@ export interface TenantListItem {
 
 export const adminApi = {
   overview: async () =>
-    (await apiClient.get<GlobalOverview>('/overview')).data,
+    (await apiClient.get<GlobalOverview>('/admin/overview')).data,
 
   listTenants: async (params?: { search?: string; status?: string; page?: number }) =>
-    (await apiClient.get<{ items: TenantListItem[]; total: number }>('/tenants', { params })).data,
+    (await apiClient.get<{ items: TenantListItem[]; total: number }>('/admin/tenants', { params })).data,
 
   getTenant: async (id: string) =>
-    (await apiClient.get(`/tenants/${id}`)).data,
+    (await apiClient.get(`/admin/tenants/${id}`)).data,
 
   updateTenantStatus: async (id: string, data: { status: string; reason?: string }) =>
-    (await apiClient.post(`/tenants/${id}/status`, data)).data,
+    (await apiClient.post(`/admin/tenants/${id}/status`, data)).data,
 
   migrateTenant: async (id: string, data: { target_cluster: string }) =>
-    (await apiClient.post(`/tenants/${id}/migrate`, data)).data,
+    (await apiClient.post(`/admin/tenants/${id}/migrate`, data)).data,
 
   changeUserRole: async (uid: string, data: { new_role: string }) =>
-    (await apiClient.post(`/users/${uid}/role`, data)).data,
+    (await apiClient.post(`/admin/users/${uid}/role`, data)).data,
 };

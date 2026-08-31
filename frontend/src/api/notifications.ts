@@ -30,13 +30,13 @@ export interface NotificationLog {
 
 export const notificationsApi = {
   listTemplates: async () =>
-    (await apiClient.get<{ items: NotificationTemplate[]; total: number }>('/templates')).data,
+    (await apiClient.get<{ items: NotificationTemplate[]; total: number }>('/notifications/templates')).data,
 
   listConfigs: async () =>
-    (await apiClient.get<{ items: NotificationConfig[]; total: number }>('/configs')).data,
+    (await apiClient.get<{ items: NotificationConfig[]; total: number }>('/notifications/configs')).data,
 
   createConfig: async (data: Partial<NotificationConfig>) =>
-    (await apiClient.post<NotificationConfig>('/configs', data)).data,
+    (await apiClient.post<NotificationConfig>('/notifications/configs', data)).data,
 
   sendTest: async (data: { template_key: string; recipient?: string; dry_run?: boolean }) =>
     (await apiClient.post<{
@@ -45,5 +45,5 @@ export const notificationsApi = {
     }>('/test', data)).data,
 
   listLogs: async () =>
-    (await apiClient.get<{ items: NotificationLog[]; total: number }>('/logs')).data,
+    (await apiClient.get<{ items: NotificationLog[]; total: number }>('/notifications/logs')).data,
 };

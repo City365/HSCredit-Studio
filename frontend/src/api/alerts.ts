@@ -22,20 +22,20 @@ export interface AlertSilence {
 
 export const alertsApi = {
   listRules: async () =>
-    (await apiClient.get<{ items: AlertRule[]; total: number }>('/rules')).data,
+    (await apiClient.get<{ items: AlertRule[]; total: number }>('/alerts/rules')).data,
 
   createRule: async (data: Partial<AlertRule>) =>
-    (await apiClient.post<AlertRule>('/rules', data)).data,
+    (await apiClient.post<AlertRule>('/alerts/rules', data)).data,
 
   listSilences: async () =>
-    (await apiClient.get<{ items: AlertSilence[]; total: number }>('/silences')).data,
+    (await apiClient.get<{ items: AlertSilence[]; total: number }>('/alerts/silences')).data,
 
   createSilence: async (data: Partial<AlertSilence>) =>
-    (await apiClient.post<AlertSilence>('/silences', data)).data,
+    (await apiClient.post<AlertSilence>('/alerts/silences', data)).data,
 
   evaluate: async (data: { tenant_id?: string }) =>
     (await apiClient.post<{ fired_count: number; rules_evaluated: number }>(
-      '/evaluate',
+      '/alerts/evaluate',
       data,
     )).data,
 
@@ -45,8 +45,8 @@ export const alertsApi = {
     fingerprint: string;
     labels?: Record<string, string>;
   }) =>
-    (await apiClient.post('/instances', data)).data,
+    (await apiClient.post('/alerts/instances', data)).data,
 
   getSeverities: async () =>
-    (await apiClient.get<{ severities: string[] }>('/severities')).data,
+    (await apiClient.get<{ severities: string[] }>('/alerts/severities')).data,
 };

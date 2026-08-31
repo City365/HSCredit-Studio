@@ -33,44 +33,44 @@ export interface CrossBorderTransfer {
 
 export const piplApi = {
   listMyConsents: async () =>
-    (await apiClient.get<{ items: ConsentRecord[]; total: number }>('/consent')).data,
+    (await apiClient.get<{ items: ConsentRecord[]; total: number }>('/pipl/consent')).data,
 
   grantConsent: async (data: { purpose: string }) =>
-    (await apiClient.post<ConsentRecord>('/consents/grant', data)).data,
+    (await apiClient.post<ConsentRecord>('/pipl/consent/grant', data)).data,
 
   revokeConsent: async (data: { purpose: string }) =>
-    (await apiClient.post('/consents/revoke', data)).data,
+    (await apiClient.post('/pipl/consent/revoke', data)).data,
 
   checkConsent: async (params: { purpose: string }) =>
-    (await apiClient.get<{ granted: boolean }>('/consents/check', { params })).data,
+    (await apiClient.get<{ granted: boolean }>('/pipl/consent/check', { params })).data,
 
   listMyDsrs: async () =>
-    (await apiClient.get<{ items: DsrItem[]; total: number }>('/dsr')).data,
+    (await apiClient.get<{ items: DsrItem[]; total: number }>('/pipl/dsr')).data,
 
   submitDsr: async (data: {
     request_type: 'query' | 'delete' | 'correct' | 'portability';
     reason: string;
-  }) => (await apiClient.post<DsrItem>('/dsr', data)).data,
+  }) => (await apiClient.post<DsrItem>('/pipl/dsr', data)).data,
 
   exportMyData: async () =>
-    (await apiClient.post<{ download_url: string; size_bytes: number }>('/dsr/portability', {})).data,
+    (await apiClient.post<{ download_url: string; size_bytes: number }>('/pipl/dsr/portability', {})).data,
 
   anonymizeMyData: async () =>
-    (await apiClient.post<{ affected_fields: string[] }>('/dsr/anonymize', {})).data,
+    (await apiClient.post<{ affected_fields: string[] }>('/pipl/dsr/anonymize', {})).data,
 
   listCrossBorder: async () =>
     (await apiClient.get<{ items: CrossBorderTransfer[]; total: number }>(
-      '/cross-border',
+      '/pipl/cross-border',
     )).data,
 
   applyCrossBorder: async (data: {
     destination_country: string;
     recipient: string;
     legal_basis: string;
-  }) => (await apiClient.post<CrossBorderTransfer>('/cross-border', data)).data,
+  }) => (await apiClient.post<CrossBorderTransfer>('/pipl/cross-border', data)).data,
 
   getCurrentPolicy: async () =>
     (await apiClient.get<{ version: string; content_md: string; updated_at: string }>(
-      '/policy',
+      '/pipl/privacy-policy',
     )).data,
 };

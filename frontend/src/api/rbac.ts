@@ -36,22 +36,22 @@ export interface RoleAuditItem {
 
 export const rbacApi = {
   getMatrix: async () =>
-    (await apiClient.get<PermissionMatrix>('/matrix')).data,
+    (await apiClient.get<PermissionMatrix>('/rbac/matrix')).data,
 
   getMenu: async () =>
     (await apiClient.get<{ menu: Array<{ key: string; label: string; icon?: string }> }>(
-      '/menu',
+      '/rbac/menu',
     )).data,
 
   check: async (data: { resource: string; action: string }) =>
-    (await apiClient.post<{ allowed: boolean; reason?: string }>('/check', data)).data,
+    (await apiClient.post<{ allowed: boolean; reason?: string }>('/rbac/check', data)).data,
 
   listPolicies: async () =>
-    (await apiClient.get<{ items: RolePolicy[]; total: number }>('/policies')).data,
+    (await apiClient.get<{ items: RolePolicy[]; total: number }>('/rbac/policies')).data,
 
   createPolicy: async (data: Partial<RolePolicy>) =>
-    (await apiClient.post<RolePolicy>('/policies', data)).data,
+    (await apiClient.post<RolePolicy>('/rbac/policies', data)).data,
 
   listAudit: async () =>
-    (await apiClient.get<{ items: RoleAuditItem[]; total: number }>('/audit')).data,
+    (await apiClient.get<{ items: RoleAuditItem[]; total: number }>('/rbac/audit')).data,
 };

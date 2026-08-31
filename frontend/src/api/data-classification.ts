@@ -15,11 +15,11 @@ export const dataClassificationApi = {
     (await apiClient.post<{
       redacted: Record<string, string>;
       masked_fields: string[];
-    }>('/redact', data)).data,
+    }>('/data-classification/redact', data)).data,
 
   hashField: async (data: { value: string; field: string }) =>
     (await apiClient.post<{ field: string; hash: string; masked: string }>(
-      '/hash',
+      '/data-classification/hash',
       data,
     )).data,
 };

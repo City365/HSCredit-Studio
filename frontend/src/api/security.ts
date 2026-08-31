@@ -20,23 +20,23 @@ export interface SecurityMetrics {
 
 export const securityApi = {
   metrics: async () =>
-    (await apiClient.get<SecurityMetrics>('/metrics')).data,
+    (await apiClient.get<SecurityMetrics>('/security/metrics')).data,
 
   checkChain: async (data?: { since?: string }) =>
     (await apiClient.post<{
       status: 'valid' | 'broken';
       checkpoints_checked: number;
       first_invalid?: { checkpoint_id: string; detected_at: string };
-    }>('/chain/checkpoint', data ?? {})).data,
+    }>('/audit-integrity', data ?? {})).data,
 
   exportSiem: async (data: { since?: string; format?: 'cef' | 'leef' | 'json' }) =>
-    (await apiClient.post('/siem/export', data, { responseType: 'blob' })).data,
+    (await apiClient.post('/security/export', data, { responseType: 'blob' })).data,
 
   intrusionCheck: async (data: { payload: string; source_ip?: string }) =>
     (await apiClient.post<{
       blocked: boolean;
       threats: Array<{ rule: string; severity: string }>;
-    }>('/intrusion/check', data)).data,
+    }>('/security/intrusion-check', data)).data,
 
   passwordCheck: async (data: { password: string }) =>
     (await apiClient.post<{
@@ -46,24 +46,24 @@ export const securityApi = {
     }>('/password/check', data)).data,
 
   listIpRules: async () =>
-    (await apiClient.get<{ items: unknown[]; total: number }>('/ip-rules')).data,
+    (await apiClient.get<{ items: unknown[]; total: number }>('/security/ip-rules')).data,
 
   createIpRule: async (data: { rule_type: string; pattern: string; description?: string }) =>
-    (await apiClient.post('/ip-rules', data)).data,
+    (await apiClient.post('/security/ip-rules', data)).data,
 
   ipCheck: async (data: { ip: string }) =>
-    (await apiClient.post<{ allowed: boolean; matched_rule?: string }>('/ip-check', data)).data,
+    (await apiClient.post<{ allowed: boolean; matched_rule?: string }>('/security/ip-check', data)).data,
 
   listVulnerabilities: async () =>
-    (await apiClient.get<{ items: unknown[]; total: number }>('/vulnerabilities')).data,
+    (await apiClient.get<{ items: unknown[]; total: number }>('/security/vulnerabilities')).data,
 
   createVulnerability: async (data: Record<string, unknown>) =>
-    (await apiClient.post('/vulnerabilities', data)).data,
+    (await apiClient.post('/security/vulnerabilities', data)).data,
 
   vulnerabilityStats: async () =>
     (await apiClient.get<{
       total: number;
       by_severity: Record<string, number>;
       by_status: Record<string, number>;
-    }>('/vulnerabilities/stats')).data,
+    }>('/security/vulnerabilities/stats')).data,
 };
