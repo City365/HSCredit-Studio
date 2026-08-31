@@ -91,12 +91,13 @@ async def _create_workflows(session: AsyncSession, tenant_id: str, user_id: str)
         )
         session.add(wf)
         await session.flush()
-        # 创建初始版本
+        # 为每个 demo 工作流填充真实的节点编排 — 让前端编辑器打开有内容
+        definition = _demo_workflow_definition(code)
         ver = WorkflowVersion(
             version_id=ver_id,
             workflow_id=wf_id,
             version_number=1,
-            definition={"nodes": [], "edges": []},
+            definition=definition,
             created_by=uuid.UUID(user_id),
         )
         session.add(ver)
@@ -104,6 +105,177 @@ async def _create_workflows(session: AsyncSession, tenant_id: str, user_id: str)
         wf.current_version_id = ver.version_id
         out.append((str(wf_id), ver_id))
     return out
+
+
+def _demo_workflow_definition(code: str) -> dict[str, object]:
+    """为 3 个 demo 工作流返回真实的节点编排.
+
+    节点类型须在 :mod:`hscredit_studio.nodes` 注册表中存在, 否则编辑器右侧参数表单
+    无法显示. 这里复用系统评分卡模板里的标准节点.
+    """
+    if code == "credit_card_scorecard":
+        return {
+            "nodes": [
+                {"id": "csv_in", "type": "csv_ingest", "position": {"x": 0, "y": 0},
+                 "label": "CSV 接入", "data": {"node_type": "csv_ingest", "name": "CSV 接入",
+                                                "category": "数据接入", "icon": "📥",
+                                                "params": {"path": "/data/bank_card.csv",
+                                                           "sep": ",", "encoding": "utf-8"}}},
+                {"id": "ft_infer", "type": "field_type_infer", "position": {"x": 240, "y": 0},
+                 "label": "字段类型推断", "data": {"node_type": "field_type_infer",
+                                                  "name": "字段类型推断", "category": "EDA",
+                                                  "icon": "🔍",
+                                                  "params": {"target": "FPD"}}},
+                {"id": "miss", "type": "missing_rate", "position": {"x": 480, "y": 0},
+                 "label": "缺失率", "data": {"node_type": "missing_rate", "name": "缺失率",
+                                             "category": "EDA", "icon": "🕳️",
+                                             "params": {"threshold": 0.3}}},
+                {"id": "iv", "type": "iv_analysis", "position": {"x": 720, "y": 0},
+                 "label": "IV 分析", "data": {"node_type": "iv_analysis", "name": "IV 分析",
+                                              "category": "特征工程", "icon": "📊",
+                                              "params": {"target": "FPD"}}},
+                {"id": "bin_age", "type": "optimal_binning_chi", "position": {"x": 960, "y": -120},
+                 "label": "分箱-年龄", "data": {"node_type": "optimal_binning_chi",
+                                                "name": "分箱-年龄", "category": "特征工程",
+                                                "icon": "📦",
+                                                "params": {"feature": "年龄", "max_bins": 6}}},
+                {"id": "bin_inc", "type": "optimal_binning_chi", "position": {"x": 960, "y": 0},
+                 "label": "分箱-收入", "data": {"node_type": "optimal_binning_chi",
+                                                "name": "分箱-收入", "category": "特征工程",
+                                                "icon": "📦",
+                                                "params": {"feature": "年收入", "max_bins": 6}}},
+                {"id": "bin_credit", "type": "optimal_binning_chi", "position": {"x": 960, "y": 120},
+                 "label": "分箱-征信", "data": {"node_type": "optimal_binning_chi",
+                                                "name": "分箱-征信", "category": "特征工程",
+                                                "icon": "📦",
+                                                "params": {"feature": "央行征信分", "max_bins": 8}}},
+                {"id": "woe", "type": "woe_encoder", "position": {"x": 1200, "y": 0},
+                 "label": "WOE 编码", "data": {"node_type": "woe_encoder", "name": "WOE 编码",
+                                               "category": "特征工程", "icon": "🔄",
+                                               "params": {"target": "FPD"}}},
+                {"id": "lr", "type": "logistic_regression", "position": {"x": 1440, "y": 0},
+                 "label": "逻辑回归", "data": {"node_type": "logistic_regression",
+                                               "name": "逻辑回归", "category": "模型训练",
+                                               "icon": "📈",
+                                               "params": {"target": "FPD", "C": 1.0,
+                                                          "max_iter": 200}}},
+                {"id": "sc", "type": "score_card", "position": {"x": 1680, "y": 0},
+                 "label": "标准评分卡", "data": {"node_type": "score_card", "name": "标准评分卡",
+                                                 "category": "评分卡与规则", "icon": "💳",
+                                                 "params": {"target": "FPD", "base_score": 750,
+                                                            "pdo": 35.77, "rate": 50}}},
+                {"id": "rep", "type": "model_report", "position": {"x": 1920, "y": 0},
+                 "label": "模型报告", "data": {"node_type": "model_report", "name": "模型报告",
+                                               "category": "报告与部署", "icon": "📑",
+                                               "params": {"target": "FPD",
+                                                          "output_path": "/tmp/bank_card.xlsx"}}},
+            ],
+            "edges": [
+                {"source": "csv_in", "target": "ft_infer"},
+                {"source": "ft_infer", "target": "miss"},
+                {"source": "ft_infer", "target": "iv"},
+                {"source": "iv", "target": "bin_age"},
+                {"source": "iv", "target": "bin_inc"},
+                {"source": "iv", "target": "bin_credit"},
+                {"source": "bin_age", "target": "woe"},
+                {"source": "bin_inc", "target": "woe"},
+                {"source": "bin_credit", "target": "woe"},
+                {"source": "woe", "target": "lr"},
+                {"source": "lr", "target": "sc"},
+                {"source": "sc", "target": "rep"},
+            ],
+            "viewport": {"x": 0, "y": 0, "zoom": 0.6},
+        }
+    if code == "cash_loan_risk":
+        return {
+            "nodes": [
+                {"id": "src", "type": "csv_ingest", "position": {"x": 0, "y": 0},
+                 "label": "CSV 接入", "data": {"node_type": "csv_ingest", "name": "CSV 接入",
+                                                "category": "数据接入", "icon": "📥",
+                                                "params": {"path": "/data/cash_loan.csv"}}},
+                {"id": "ft", "type": "field_type_infer", "position": {"x": 240, "y": 0},
+                 "label": "字段类型", "data": {"node_type": "field_type_infer",
+                                               "name": "字段类型", "category": "EDA",
+                                               "icon": "🔍",
+                                               "params": {"target": "FPD30"}}},
+                {"id": "miss", "type": "missing_rate", "position": {"x": 480, "y": 0},
+                 "label": "缺失率", "data": {"node_type": "missing_rate", "name": "缺失率",
+                                             "category": "EDA", "icon": "🕳️",
+                                             "params": {"threshold": 0.25}}},
+                {"id": "iv", "type": "iv_analysis", "position": {"x": 720, "y": 0},
+                 "label": "IV 分析", "data": {"node_type": "iv_analysis", "name": "IV 分析",
+                                              "category": "特征工程", "icon": "📊",
+                                              "params": {"target": "FPD30"}}},
+                {"id": "woe", "type": "woe_encoder", "position": {"x": 960, "y": 0},
+                 "label": "WOE 编码", "data": {"node_type": "woe_encoder", "name": "WOE 编码",
+                                               "category": "特征工程", "icon": "🔄",
+                                               "params": {"target": "FPD30"}}},
+                {"id": "sel", "type": "iv_selector", "position": {"x": 1200, "y": 0},
+                 "label": "IV 筛选", "data": {"node_type": "iv_selector", "name": "IV 筛选",
+                                              "category": "特征筛选", "icon": "🎯",
+                                              "params": {"target": "FPD30", "threshold": 0.02}}},
+                {"id": "lr", "type": "logistic_regression", "position": {"x": 1440, "y": 0},
+                 "label": "逻辑回归", "data": {"node_type": "logistic_regression",
+                                               "name": "逻辑回归", "category": "模型训练",
+                                               "icon": "📈",
+                                               "params": {"target": "FPD30", "C": 0.5,
+                                                          "max_iter": 300}}},
+                {"id": "sc", "type": "score_card", "position": {"x": 1680, "y": 0},
+                 "label": "评分卡", "data": {"node_type": "score_card", "name": "评分卡",
+                                             "category": "评分卡与规则", "icon": "💳",
+                                             "params": {"target": "FPD30", "base_score": 650,
+                                                        "pdo": 28.85, "rate": 50}}},
+            ],
+            "edges": [
+                {"source": "src", "target": "ft"},
+                {"source": "ft", "target": "miss"},
+                {"source": "ft", "target": "iv"},
+                {"source": "iv", "target": "woe"},
+                {"source": "woe", "target": "sel"},
+                {"source": "sel", "target": "lr"},
+                {"source": "lr", "target": "sc"},
+            ],
+            "viewport": {"x": 0, "y": 0, "zoom": 0.7},
+        }
+    # ecommerce_instalment_v2
+    return {
+        "nodes": [
+            {"id": "csv", "type": "csv_ingest", "position": {"x": 0, "y": 0},
+             "label": "CSV 接入", "data": {"node_type": "csv_ingest", "name": "CSV 接入",
+                                            "category": "数据接入", "icon": "📥",
+                                            "params": {"path": "/data/ecommerce.csv"}}},
+            {"id": "ft", "type": "field_type_infer", "position": {"x": 240, "y": 0},
+             "label": "字段类型", "data": {"node_type": "field_type_infer",
+                                           "name": "字段类型", "category": "EDA",
+                                           "icon": "🔍", "params": {"target": "default_30d"}}},
+            {"id": "iv", "type": "iv_analysis", "position": {"x": 480, "y": 0},
+             "label": "IV 分析", "data": {"node_type": "iv_analysis", "name": "IV 分析",
+                                          "category": "特征工程", "icon": "📊",
+                                          "params": {"target": "default_30d"}}},
+            {"id": "woe", "type": "woe_encoder", "position": {"x": 720, "y": 0},
+             "label": "WOE 编码", "data": {"node_type": "woe_encoder", "name": "WOE 编码",
+                                           "category": "特征工程", "icon": "🔄",
+                                           "params": {"target": "default_30d"}}},
+            {"id": "xgb", "type": "xgboost_train", "position": {"x": 960, "y": 0},
+             "label": "XGBoost", "data": {"node_type": "xgboost_train", "name": "XGBoost",
+                                          "category": "模型训练", "icon": "🌲",
+                                          "params": {"target": "default_30d", "n_estimators": 200,
+                                                     "max_depth": 5, "lr": 0.05}}},
+            {"id": "rep", "type": "model_report", "position": {"x": 1200, "y": 0},
+             "label": "模型报告", "data": {"node_type": "model_report", "name": "模型报告",
+                                           "category": "报告与部署", "icon": "📑",
+                                           "params": {"target": "default_30d",
+                                                      "output_path": "/tmp/ecom_v2.xlsx"}}},
+        ],
+        "edges": [
+            {"source": "csv", "target": "ft"},
+            {"source": "ft", "target": "iv"},
+            {"source": "iv", "target": "woe"},
+            {"source": "woe", "target": "xgb"},
+            {"source": "xgb", "target": "rep"},
+        ],
+        "viewport": {"x": 0, "y": 0, "zoom": 0.7},
+    }
 
 
 async def _create_runs(
