@@ -53,24 +53,71 @@ export function RbacPage(): React.ReactElement {
           children: (
             <Card extra={<Button icon={<ReloadOutlined />} onClick={() => void load()}>刷新</Button>}>
               {matrix && (
-                <Table
-                  rowKey="role"
-                  pagination={false}
-                  dataSource={matrix.roles.map((r) => ({ key: r, role: r, ...Object.fromEntries(matrix.resources.map((res) => [res, matrix.matrix[r]?.[res] ?? '—'])) }))}
-                  scroll={{ x: 'max-content' }}
-                  columns={[
-                    { title: '角色', dataIndex: 'role', fixed: 'left' as const, width: 120, render: (r: string) => <Tag color="blue">{r}</Tag> },
-                    ...matrix.resources.map((res) => ({
-                      title: res,
-                      dataIndex: res,
-                      render: (v: string) => (
-                        <Tag color={v === 'admin' ? 'red' : v === 'write' ? 'orange' : v === 'read' ? 'blue' : 'default'}>
-                          {v}
-                        </Tag>
-                      ),
-                    })),
-                  ]}
-                />
+                <div>
+                  {/* 角色说明卡 */}
+                  <Card type="inner" title="角色等级 (rank 越高权限越大)" style={{ marginBottom: 16 }}>
+                    <Space size="middle" wrap>
+                      {matrix.roles.map((r) => (
+                        <Card key={r.role} size="small" style={{ width: 220 }}>
+                          <Space direction="vertical" size={2}>
+                            <Space>
+                              <Tag color="blue">{r.role}</Tag>
+                              <span style={{ fontWeight: 600 }}>{r.label}</span>
+                            </Space>
+                            <span style={{ color: '#666', fontSize: 12 }}>
+                              rank={r.rank}{r.is_tenant_scoped ? ' · 租户内' : ' · 全平台'}
+                            </span>
+                            <span style={{ fontSize: 12 }}>{r.description}</span>
+                          </Space>
+                        </Card>
+                      ))}
+                    </Space>
+                  </Card>
+
+                  {/* 权限矩阵 */}
+                  <Card type="inner" title="权限矩阵 (resource × role)">
+                    <Table
+                      rowKey="resource"
+                      pagination={false}
+                      scroll={{ x: 'max-content' }}
+                      dataSource={matrix.resources.map((res) => {
+                        const row: Record<string, unknown> = { key: res, resource: res };
+                        matrix.roles.forEach((r) => {
+                          row[r.role] = matrix.matrix[r.role]?.[res] ?? null;
+                        });
+                        return row;
+                      })}
+                      columns={[
+                        {
+                          title: '资源',
+                          dataIndex: 'resource',
+                          fixed: 'left' as const,
+                          width: 110,
+                          render: (v: string) => <Tag color="purple">{v}</Tag>,
+                        },
+                        ...matrix.roles.map((r) => ({
+                          title: r.label,
+                          dataIndex: r.role,
+                          render: (v: string | null) => (
+                            <Tag color={v === 'admin' ? 'red' : v === 'write' ? 'orange' : v === 'read' ? 'blue' : 'default'}>
+                              {v ?? '—'}
+                            </Tag>
+                          ),
+                        })),
+                      ]}
+                    />
+                  </Card>
+
+                  {/* 操作权限图例 */}
+                  <Card type="inner" title="操作权限图例" style={{ marginTop: 16 }}>
+                    <Space wrap>
+                      <Tag color="red">admin (管理)</Tag>
+                      <Tag color="orange">write (读写)</Tag>
+                      <Tag color="blue">read (只读)</Tag>
+                      <Tag>— (无权限)</Tag>
+                    </Space>
+                  </Card>
+                </div>
               )}
             </Card>
           ),

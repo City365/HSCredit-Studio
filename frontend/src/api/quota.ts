@@ -1,16 +1,30 @@
 /** 配额与用量 API — Phase 4 B18/B19. */
 import { apiClient } from './client';
 
-export interface QuotaUsage {
-  tenant_id: string;
-  plan: string;
-  monthly_runs_used: number;
-  monthly_runs_limit: number;
-  monthly_duration_ms_used: number;
-  monthly_duration_ms_limit: number;
-  monthly_storage_bytes_used: number;
-  monthly_storage_gb_limit: number;
+export interface QuotaDimension {
+  used: number;
+  limit: number;
+  unlimited: boolean;
   ratio: number;
+}
+
+export interface QuotaUsage {
+  plan: string;
+  monthly_runs: QuotaDimension;
+  monthly_duration_ms: QuotaDimension;
+  monthly_storage_gb: QuotaDimension;
+}
+
+export interface QuotaCheck {
+  allowed: boolean;
+  near_limit: boolean;
+  exceeded_dim: string | null;
+  message: string;
+}
+
+export interface QuotaResponse {
+  snapshot: QuotaUsage;
+  check: QuotaCheck;
 }
 
 export interface TenantUsage {
@@ -23,7 +37,7 @@ export interface TenantUsage {
 
 export const quotaApi = {
   get: async () =>
-    (await apiClient.get<QuotaUsage>('')).data,
+    (await apiClient.get<QuotaResponse>('')).data,
 };
 
 export const usageApi = {

@@ -1,11 +1,18 @@
 /** RBAC API — Phase 6 B28. */
 import { apiClient } from './client';
 
+export interface RbacRoleInfo {
+  role: string;
+  label: string;
+  rank: number;
+  is_tenant_scoped: boolean;
+  description: string;
+}
+
 export interface PermissionMatrix {
-  roles: string[];
+  roles: RbacRoleInfo[];
   resources: string[];
-  actions: string[];
-  matrix: Record<string, Record<string, string>>;
+  matrix: Record<string, Record<string, string | null>>;
 }
 
 export interface RolePolicy {

@@ -2,13 +2,20 @@
 import { apiClient } from './client';
 
 export interface SecurityMetrics {
-  total_audit_events: number;
-  failed_logins_24h: number;
-  active_lockouts: number;
-  open_vulnerabilities: number;
-  ip_rules_count: number;
-  chain_integrity: 'valid' | 'broken';
-  last_chain_check_at: string;
+  total_events?: number;
+  failed_logins?: number;
+  auth_failures?: number;
+  sensitive_data_access?: number;
+  data_exports?: number;
+  permission_changes?: number;
+  config_changes?: number;
+  open_vulnerabilities?: number;
+  ip_rules_count?: number;
+  chain_integrity?: 'valid' | 'broken';
+  last_chain_check_at?: string;
+  top_actions?: Array<[string, number]>;
+  top_ips?: Array<[string, number]>;
+  window_days?: number;
 }
 
 export const securityApi = {
