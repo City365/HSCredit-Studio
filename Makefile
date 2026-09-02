@@ -1,7 +1,7 @@
 # HSCredit Workflow Platform Makefile
 # 常用命令统一入口
 
-.PHONY: help dev-up dev-down backend-dev frontend-dev test lint format migrate seed logs clean
+.PHONY: help dev-up dev-down backend-dev frontend-dev backend-stop frontend-stop stop-all test lint format migrate seed logs clean
 
 help: ## 显示所有可用命令
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -25,13 +25,21 @@ dev-reset: ## 重置开发数据（删除所有数据）
 	docker compose -f deploy/docker-compose.dev.yml down -v
 	@echo "✅ 开发数据已重置"
 
+stop-all: ## 一键关闭后端 + 前端开发服务器
+	@./scripts/kill-by-port.sh 8003 "backend-dev"
+	@./scripts/kill-by-port.sh 3000 "frontend-dev"
+	@echo "✅ 已停止后端 (8003) 和前端 (3000)"
+
 # ==================== 后端 ====================
 
 backend-install: ## 安装后端依赖
 	cd backend && pip install -e ".[dev,test]"
 
 backend-dev: ## 启动后端开发服务器
-	cd backend && uvicorn hscredit_studio.main:app --reload --host 0.0.0.0 --port 8000
+	cd backend && uvicorn hscredit_studio.main:app --reload --host 0.0.0.0 --port 8003
+
+backend-stop: ## 关闭后端开发服务器 (按端口 8003)
+	@./scripts/kill-by-port.sh 8003 "backend-dev"
 
 backend-shell: ## 进入后端 Python 交互
 	cd backend && python
@@ -59,6 +67,9 @@ frontend-install: ## 安装前端依赖
 
 frontend-dev: ## 启动前端开发服务器
 	cd frontend && npm run dev
+
+frontend-stop: ## 关闭前端开发服务器 (按端口 3000)
+	@./scripts/kill-by-port.sh 3000 "frontend-dev"
 
 frontend-build: ## 构建前端生产包
 	cd frontend && npm run build
