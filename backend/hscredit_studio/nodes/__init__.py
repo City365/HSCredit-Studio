@@ -48,6 +48,7 @@ from hscredit_studio.nodes.feature_engineering import (
 )
 from hscredit_studio.nodes.feature_selection import (
     iv_selector,
+    selectors,
     vif_selector,
 )
 from hscredit_studio.nodes.model_training import (

@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from hscredit_studio.nodes.feature_selection import (
     iv_selector,
+    selectors,
     vif_selector,
 )
 
 __all__ = [
     "iv_selector",
+    "selectors",
     "vif_selector",
 ]
