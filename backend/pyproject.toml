@@ -46,6 +46,8 @@ dependencies = [
     "opentelemetry-instrumentation-sqlalchemy>=0.44b0",
     "opentelemetry-instrumentation-celery>=0.44b0",
     "opentelemetry-instrumentation-redis>=0.44b0",
+    # Phase 6 B36 节点可插拔 — AST 黑名单 + RestrictedPython 编译
+    "RestrictedPython>=6.0",
     # hscredit 核心库（本地路径安装，避免 PyPI 找不到 0.1.2）
     "hscredit",
 ]

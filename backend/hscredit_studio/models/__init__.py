@@ -52,11 +52,14 @@ from hscredit_studio.models.billing import (
 )
 from hscredit_studio.models.node import (
     CUSTOM_NODE_TEST_RUN_STATUS_VALUES,
+    DRAFT_VALIDATION_STATUSES,
     VISIBILITY_VALUES,
     CustomNode,
     CustomNodeTestRun,
     CustomNodeVersion,
     NodeDefinition,
+    NodeDefinitionDraft,
+    NodeDefinitionLock,
     NodeResourceUsage,
 )
 
@@ -157,6 +160,7 @@ __all__ = [
     "CONTRACT_STATUS_VALUES",
     "CROSS_BORDER_BASIS_VALUES",  # Phase 5 B26
     "CUSTOM_NODE_TEST_RUN_STATUS_VALUES",
+    "DRAFT_VALIDATION_STATUSES",  # Phase 6 B36
     "DSR_STATUS_VALUES",  # Phase 5 B26
     "DSR_TYPE_VALUES",  # Phase 5 B26
     "INVOICE_STATUS_VALUES",
@@ -206,6 +210,8 @@ __all__ = [
     "NodeArtifact",
     # 节点
     "NodeDefinition",
+    "NodeDefinitionDraft",  # Phase 6 B36
+    "NodeDefinitionLock",     # Phase 6 B36
     "NodeExecution",
     "NodeExecutionLog",
     "NodeResourceUsage",
