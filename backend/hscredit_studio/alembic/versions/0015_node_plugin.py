@@ -319,6 +319,20 @@ def upgrade() -> None:
             nullable=False,
             comment="过期时间 (默认 5 分钟后)",
         ),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+            comment="锁创建时间 (TimestampMixin)",
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+            comment="锁更新时间 (心跳续期时更新, TimestampMixin)",
+        ),
         sa.UniqueConstraint("node_type", "tenant_id", name="uq_node_locks_type_tenant"),
         sa.Index("ix_node_locks_expires", "expires_at"),
     )

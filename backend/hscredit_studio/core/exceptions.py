@@ -96,7 +96,21 @@ class NodeNotFoundError(HSCreditWorkflowError):
     http_status = 404
 
 
+class ResourceNotFoundError(HSCreditWorkflowError):
+    """通用资源不存在 (草稿/版本/锁等)."""
+
+    code = "E_NOT_FOUND"
+    http_status = 404
+
+
 # ===== 状态/状态机类（409） =====
+
+
+class NodeTypeConflictError(HSCreditWorkflowError):
+    """节点类型冲突 (已存在/锁占用/重名)."""
+
+    code = "E_NODE_TYPE_CONFLICT"
+    http_status = 409
 
 
 class StateError(HSCreditWorkflowError):
@@ -225,7 +239,9 @@ __all__ = [
     "InputValidationError",
     "NodeExecutionError",
     "NodeNotFoundError",
+    "NodeTypeConflictError",
     "NotFittedError",
+    "ResourceNotFoundError",
     "SerializationError",
     "StateError",
     "TenantForbiddenError",

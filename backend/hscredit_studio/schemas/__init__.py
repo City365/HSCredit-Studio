@@ -83,6 +83,29 @@ from hscredit_studio.schemas.common import (
     SuccessResponse,
     TimestampedSchema,
 )
+
+# ----- 自定义节点 (Phase 6 B36) -----
+from hscredit_studio.schemas.custom_node import (
+    CustomNodeCreateRequest,
+    CustomNodeDraftRequest,
+    CustomNodeDraftResponse,
+    CustomNodeListItem,
+    CustomNodeListResponse,
+    CustomNodeLockResponse,
+    CustomNodeResponse,
+    CustomNodeUpdateCodeRequest,
+    CustomNodeUpdateRequest,
+    CustomNodeVersionListResponse,
+    CustomNodeVersionResponse,
+    DetectContractRequest,
+    DetectContractResponse,
+    TestRunRequest,
+    TestRunResponse,
+    ValidateRequest,
+    ValidateResponse,
+    ValidationIssueResponse,
+    VISIBILITY_VALUES,
+)
 from hscredit_studio.schemas.data_classification import (
     FieldClassificationInfo,
     MaskResult,
@@ -266,6 +289,25 @@ __all__ = [
     "CrossBorderRequestSchema",
     "CrossBorderResponse",
     "CrossTenantShareRequest",  # Phase 6 B31
+    # 自定义节点 (Phase 6 B36)
+    "CustomNodeCreateRequest",
+    "CustomNodeDraftRequest",
+    "CustomNodeDraftResponse",
+    "CustomNodeListItem",
+    "CustomNodeListResponse",
+    "CustomNodeLockResponse",
+    "CustomNodeResponse",
+    "CustomNodeUpdateCodeRequest",
+    "CustomNodeUpdateRequest",
+    "CustomNodeVersionListResponse",
+    "CustomNodeVersionResponse",
+    "DetectContractRequest",
+    "DetectContractResponse",
+    "TestRunRequest",
+    "TestRunResponse",
+    "ValidateRequest",
+    "ValidateResponse",
+    "ValidationIssueResponse",
     # 模型导出 (Phase 7 B34)
     "DemoModelRequest",
     "DemoModelResponse",

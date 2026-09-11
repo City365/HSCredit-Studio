@@ -455,6 +455,12 @@ class NodeDefinitionLock(Base, TimestampMixin, ModelSerializerMixin):
         nullable=False,
         comment="锁持有者",
     )
+    locked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+        comment="锁获取时间",
+    )
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

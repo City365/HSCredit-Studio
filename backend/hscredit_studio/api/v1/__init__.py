@@ -13,6 +13,7 @@ from hscredit_studio.api.v1 import (
     bi_export,
     billing,
     contracts,
+    custom_nodes,  # Phase 6 B36
     data_classification,
     health,
     industry_templates,
@@ -41,6 +42,7 @@ __all__ = [
     "bi_export",
     "billing",
     "contracts",
+    "custom_nodes",  # Phase 6 B36
     "data_classification",
     "health",
     "industry_templates",

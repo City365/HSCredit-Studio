@@ -20,6 +20,7 @@ from hscredit_studio.api.v1 import (
     bi_export,
     billing,
     contracts,
+    custom_nodes,  # Phase 6 B36
     data_classification,
     health,
     industry_templates,
@@ -159,6 +160,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["认证"])
 app.include_router(workflows.router, prefix="/api/v1/{tenant_slug}/workflows", tags=["工作流"])
 app.include_router(runs.router, prefix="/api/v1/{tenant_slug}/runs", tags=["运行"])
 app.include_router(nodes.router, prefix="/api/v1/{tenant_slug}/node-definitions", tags=["节点定义"])
+app.include_router(custom_nodes.router, prefix="/api/v1/{tenant_slug}/custom-nodes", tags=["自定义节点"])
 app.include_router(templates.router, prefix="/api/v1/{tenant_slug}/templates", tags=["模板"])
 app.include_router(audit.router, prefix="/api/v1/{tenant_slug}/audit-events", tags=["审计"])
 app.include_router(monitor.router, prefix="/api/v1/{tenant_slug}/monitor", tags=["监控"])

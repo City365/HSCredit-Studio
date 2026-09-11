@@ -34,7 +34,9 @@ from hscredit_studio.core.exceptions import (
     HSCreditWorkflowError,
     NodeExecutionError,
     NodeNotFoundError,
+    NodeTypeConflictError,  # Phase 6 B36
     NotFittedError,
+    ResourceNotFoundError,  # Phase 6 B36
     SerializationError,
     StateError,
     TenantForbiddenError,
@@ -53,6 +55,8 @@ _STATUS_MAP: dict[type[Exception], int] = {
     TenantForbiddenError: status.HTTP_403_FORBIDDEN,
     FeatureNotFoundError: status.HTTP_404_NOT_FOUND,
     NodeNotFoundError: status.HTTP_404_NOT_FOUND,
+    ResourceNotFoundError: status.HTTP_404_NOT_FOUND,  # Phase 6 B36
+    NodeTypeConflictError: status.HTTP_409_CONFLICT,  # Phase 6 B36
     StateError: status.HTTP_409_CONFLICT,
     NotFittedError: status.HTTP_409_CONFLICT,
     WorkflowParseError: status.HTTP_400_BAD_REQUEST,
