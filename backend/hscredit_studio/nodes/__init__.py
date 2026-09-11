@@ -65,6 +65,7 @@ from hscredit_studio.nodes.report_deploy import (
 from hscredit_studio.nodes.scorecard_rule import (
     round_score_card,
     score_card,
+    scorecard_extra,
 )
 
 __all__ = [

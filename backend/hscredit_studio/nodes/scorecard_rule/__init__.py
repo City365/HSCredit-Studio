@@ -9,9 +9,11 @@ from __future__ import annotations
 from hscredit_studio.nodes.scorecard_rule import (
     round_score_card,
     score_card,
+    scorecard_extra,
 )
 
 __all__ = [
     "round_score_card",
     "score_card",
+    "scorecard_extra",
 ]
