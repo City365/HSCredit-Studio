@@ -8,14 +8,18 @@ from __future__ import annotations
 
 from hscredit_studio.nodes.feature_engineering import (
     num_expr_derive,
+    optimal_binning,
     optimal_binning_cart,
     optimal_binning_chi,
+    single_method_binning,
     woe_encoder,
 )
 
 __all__ = [
     "num_expr_derive",
+    "optimal_binning",
     "optimal_binning_cart",
     "optimal_binning_chi",
+    "single_method_binning",
     "woe_encoder",
 ]

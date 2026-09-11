@@ -39,8 +39,10 @@ from hscredit_studio.nodes.eda import (
 )
 from hscredit_studio.nodes.feature_engineering import (
     num_expr_derive,
+    optimal_binning,
     optimal_binning_cart,
     optimal_binning_chi,
+    single_method_binning,
     woe_encoder,
 )
 from hscredit_studio.nodes.feature_selection import (
@@ -81,6 +83,7 @@ __all__ = [
     "model_report",
     # 特征工程
     "num_expr_derive",
+    "optimal_binning",
     "optimal_binning_cart",
     "optimal_binning_chi",
     "register_node",
@@ -89,6 +92,7 @@ __all__ = [
     # 评分卡与规则
     "score_card",
     "shap_explanation",
+    "single_method_binning",
     "train_oot_split",
     "vif_selector",
     "woe_encoder",
