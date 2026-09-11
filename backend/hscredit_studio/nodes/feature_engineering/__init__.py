@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from hscredit_studio.nodes.feature_engineering import (
+    encoders,
     num_expr_derive,
     optimal_binning,
     optimal_binning_cart,
@@ -16,6 +17,7 @@ from hscredit_studio.nodes.feature_engineering import (
 )
 
 __all__ = [
+    "encoders",
     "num_expr_derive",
     "optimal_binning",
     "optimal_binning_cart",

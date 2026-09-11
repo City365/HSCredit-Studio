@@ -38,6 +38,7 @@ from hscredit_studio.nodes.eda import (
     missing_rate,
 )
 from hscredit_studio.nodes.feature_engineering import (
+    encoders,
     num_expr_derive,
     optimal_binning,
     optimal_binning_cart,
