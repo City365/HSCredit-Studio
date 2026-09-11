@@ -75,6 +75,7 @@ from hscredit_studio.nodes import (
     eda_nodes,
     explainability_nodes,
     rule_nodes,
+    stage4_nodes,
     viz_nodes,
 )
 
