@@ -52,6 +52,7 @@ from hscredit_studio.nodes.feature_selection import (
     vif_selector,
 )
 from hscredit_studio.nodes.model_training import (
+    boosting_models,
     logistic_regression,
     shap_explanation,
     xgboost,

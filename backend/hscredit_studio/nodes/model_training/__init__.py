@@ -7,9 +7,15 @@
 from __future__ import annotations
 
 from hscredit_studio.nodes.model_training import (
+    boosting_models,
     logistic_regression,
+    shap_explanation,
+    xgboost,
 )
 
 __all__ = [
+    "boosting_models",
     "logistic_regression",
+    "shap_explanation",
+    "xgboost",
 ]
