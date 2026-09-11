@@ -60,12 +60,19 @@ from hscredit_studio.nodes.model_training import (
 from hscredit_studio.nodes.registry import NodeRegistry, register_node
 from hscredit_studio.nodes.report_deploy import (
     excel_export,
+    metrics_nodes,
     model_report,
 )
 from hscredit_studio.nodes.scorecard_rule import (
     round_score_card,
     score_card,
     scorecard_extra,
+)
+
+# 顶层模块 (非分类子包, 直接放 nodes/ 根)
+from hscredit_studio.nodes import (
+    explainability_nodes,
+    rule_nodes,
 )
 
 __all__ = [
