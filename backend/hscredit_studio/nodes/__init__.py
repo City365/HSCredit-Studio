@@ -71,8 +71,11 @@ from hscredit_studio.nodes.scorecard_rule import (
 
 # 顶层模块 (非分类子包, 直接放 nodes/ 根)
 from hscredit_studio.nodes import (
+    data_source_nodes,
+    eda_nodes,
     explainability_nodes,
     rule_nodes,
+    viz_nodes,
 )
 
 __all__ = [
