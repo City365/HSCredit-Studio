@@ -67,7 +67,42 @@ async def lifespan(app: FastAPI):
         logger.info("✅ 系统模板已就绪 (评分卡/规则/监控/6 个行业模板)")
     except Exception as e:  # noqa: BLE001
         logger.warning(f"⚠️  ensure_system_templates 失败: {e}")
+
+    # Phase 6 B36: 加载自定义节点到 NodeRegistry
+    try:
+        from hscredit_studio.nodes.loader import get_loader
+        async with async_session_maker() as session:
+            stats = await get_loader().load_all_to_registry(session)
+        logger.info(
+            f"✅ 自定义节点已加载到 Registry: {stats['loaded']} 个 (失败 {stats['skipped']})"
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"⚠️  自定义节点加载失败: {e}")
+
+    # Phase 6 B36: 启动 Redis pub/sub 监听 (多 worker 同步)
+    import asyncio
+    from hscredit_studio.services.node_pubsub import start_reload_listener, stop_reload_listener
+    listener_task = None
+    try:
+        listener_task = asyncio.create_task(start_reload_listener())
+        logger.info("✅ 自定义节点 pub/sub 监听已启动")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"⚠️  pub/sub 监听启动失败: {e}")
+
     yield
+
+    # 清理 pub/sub 监听
+    if listener_task is not None:
+        try:
+            await stop_reload_listener()
+            listener_task.cancel()
+            try:
+                await listener_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        except Exception:
+            pass
+
     logger.info("👋 HSCredit Workflow 关闭中...")
 
 

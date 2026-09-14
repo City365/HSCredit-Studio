@@ -155,6 +155,14 @@ async def create_node(
             node_type=node_type,
             user_id=str(user_id),
         )
+
+        # Phase 6 B36: 发布 reload 消息, 让所有 worker 加载新节点
+        try:
+            from hscredit_studio.services.node_pubsub import publish_node_reload
+            await publish_node_reload(node_type, action="reload")
+        except Exception as e:
+            _log.warning("node_reload_publish_failed_on_create", error=str(e)[:200])
+
         return cn
 
     except IntegrityError as e:
@@ -309,18 +317,26 @@ async def soft_delete_node(
 ) -> None:
     """软删除节点 (设置 deleted_at)."""
     cn = await get_node(session, custom_node_id=custom_node_id, tenant_id=tenant_id)
+    node_type = cn.node_type  # 保存供后续使用
     cn.deleted_at = datetime.utcnow()
     cn.enabled = False
     # 同步 node_definitions: 软删除 (enabled=false)
-    nd = await session.get(NodeDefinition, cn.node_type)
+    nd = await session.get(NodeDefinition, node_type)
     if nd is not None:
         nd.enabled = False
     await session.commit()
     _log.info(
         "custom_node_deleted",
         custom_node_id=str(custom_node_id),
-        node_type=cn.node_type,
+        node_type=node_type,
     )
+
+    # Phase 6 B36: 发布 remove 消息, 让所有 worker 卸载
+    try:
+        from hscredit_studio.services.node_pubsub import publish_node_reload
+        await publish_node_reload(node_type, action="remove")
+    except Exception as e:
+        _log.warning("node_reload_publish_failed_on_delete", error=str(e)[:200])
 
 
 # ===== 版本管理 =====
@@ -379,6 +395,13 @@ async def update_code(
         nd.contract = contract_dict
         nd.contract_version = 2
         await session.commit()
+
+    # Phase 6 B36: 发布 reload 消息, 让所有 worker 同步
+    try:
+        from hscredit_studio.services.node_pubsub import publish_node_reload
+        await publish_node_reload(cn.node_type, action="reload")
+    except Exception as e:
+        _log.warning("node_reload_publish_failed", error=str(e)[:200])
 
     _log.info(
         "custom_node_version_created",
