@@ -217,7 +217,10 @@ async def sync_node_definitions(
             cat_val = contract.category
             if not isinstance(cat_val, str):
                 cat_val = cat_val.value
-            nd = NodeDefinition(
+            # 用 pg INSERT ... ON CONFLICT DO UPDATE 避免并发 sync 或残留导致 unique 冲突.
+            # 兼容场景: 之前 sync 失败中断留下半成品行, 第二次 sync 应当覆盖而非失败.
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+            stmt = pg_insert(NodeDefinition).values(
                 node_type=nt,
                 category=cat_val,
                 name=contract.name,
@@ -230,8 +233,18 @@ async def sync_node_definitions(
                 source="system",
                 meta_editable=False,
                 owner_tenant_id=None,
+            ).on_conflict_do_update(
+                index_elements=[NodeDefinition.node_type],
+                set_={
+                    "category": cat_val,
+                    "name": contract.name,
+                    "description": contract.description or "",
+                    "icon": contract.icon or "📦",
+                    "contract": contract_dict,
+                    "contract_version": 2,
+                },
             )
-            session.add(nd)
+            await session.execute(stmt)
             added += 1
 
     # 软删除: DB 有但 registry 没有

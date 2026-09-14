@@ -131,7 +131,9 @@ def main() -> int:
         restricted_builtins = {}
 
     # 删除危险 builtin
-    for blocked in ("eval", "exec", "compile", "__import__", "open", "input", "breakpoint"):
+    # __import__ 不在这里 pop: 用户代码 `from x import y` 编译后是 `__import__('x', ...)`,
+    # 没了 __import__ 会 ImportError. 改成下面用白名单版本替换它.
+    for blocked in ("eval", "exec", "compile", "open", "input", "breakpoint"):
         restricted_builtins.pop(blocked, None)
 
     # 主动补回 Python class 定义必需的 builtin
@@ -140,6 +142,39 @@ def main() -> int:
     import builtins as _bi
     if "__build_class__" not in restricted_builtins and hasattr(_bi, "__build_class__"):
         restricted_builtins["__build_class__"] = _bi.__build_class__
+
+    # 替换 __import__ 为白名单版本: 只允许 import 安全模块
+    # 用户的 from hscredit_studio.nodes.base import BaseNode 编译后
+    # 就是 __import__('hscredit_studio.nodes.base', ...).
+    _ALLOWED_IMPORT_PREFIXES = (
+        "hscredit_studio.nodes.base",
+        "hscredit_studio.schemas.node_contract",
+        "hscredit_studio.schemas",
+    )
+    # 常用的 stdlib 数据科学白名单 (避免用户 import os/subprocess 等)
+    _ALLOWED_IMPORT_STDLIB = frozenset({
+        "math", "statistics", "random", "datetime", "json", "re",
+        "collections", "itertools", "functools", "typing",
+        "pandas", "numpy", "polars",  # 数据栈
+    })
+
+    def _safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+        # 同包内相对 import (level > 0) 不放行
+        if level != 0:
+            raise ImportError("relative import not allowed in sandbox")
+        # 白名单检查
+        allowed = any(
+            name == p or name.startswith(p + ".")
+            for p in _ALLOWED_IMPORT_PREFIXES
+        ) or name in _ALLOWED_IMPORT_STDLIB
+        if not allowed:
+            raise ImportError(
+                f"import of {name!r} is not allowed in sandbox "
+                f"(only {_ALLOWED_IMPORT_STDLIB | set(_ALLOWED_IMPORT_PREFIXES)})"
+            )
+        return _bi.__import__(name, globals, locals, fromlist, level)
+
+    restricted_builtins["__import__"] = _safe_import
 
     # RestrictedPython 编译时会注入 _getattr_/_getitem_/_getiter_ 守卫调用,
     # 它们必须在 globals 里 (不是 __builtins__ 里), 否则运行时 NameError.
@@ -207,14 +242,27 @@ def main() -> int:
         # 注入业务类 (允许用户直接用, 不需要 import)
         "BaseNode": BaseNode,
         "HSCreditWorkflowError": HSCreditWorkflowError,
+        # RestrictedPython 在 Python 3 的 class 定义里需要这些
+        "__metaclass__": type,
     }
     # RestrictedPython 编译时要求的守卫函数
     restricted_globals.update(restricted_globals_extras)
 
     # ===== 4. 执行用户代码 =====
+    # 注意: 必须只传 globals, 不传 locals dict. RestrictedPython 编译的 `from x import Y`
+    # 会输出 `STORE_NAME Y`, 在 exec(code, globals, locals) 模式下 STORE_NAME 会写到 locals,
+    # 而 class body 内的 `LOAD_NAME Y` 只会查 globals (不查 locals) — 名字找不到 → NameError.
+    # 不传 locals 时, STORE_NAME 写到 globals (Python 标准行为), LOAD_NAME 就能找到.
     user_globals: dict = {}
     try:
-        exec(bytecode, restricted_globals, user_globals)
+        exec(bytecode, restricted_globals)
+        # exec 不传 locals 时, globals 字典会被更新; 我们从中抽出用户定义的类
+        user_globals.update({
+            k: v for k, v in restricted_globals.items()
+            if not k.startswith("_") and k not in {
+                "BaseNode", "HSCreditWorkflowError",
+            }
+        })
     except Exception as e:
         result = _serialize_error(e, code="E_EXEC_USER_CODE")
         sys.stdout.buffer.write(pickle.dumps(result))
