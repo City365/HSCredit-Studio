@@ -43,6 +43,10 @@ const PiplPage = lazy(() => import('./pages/pipl/Index'));
 const DataClassificationPage = lazy(() => import('./pages/data-classification/Index'));
 const RbacPage = lazy(() => import('./pages/rbac/Index'));
 const QuotaPage = lazy(() => import('./pages/quota/Index'));
+const NodesListPage = lazy(() => import('./pages/nodes/List'));
+const NodesNewPage = lazy(() => import('./pages/nodes/New').then((m) => ({ default: m.default })));
+const NodesEditPage = lazy(() => import('./pages/nodes/Edit').then((m) => ({ default: m.default })));
+const NodesTestPage = lazy(() => import('./pages/nodes/Test').then((m) => ({ default: m.default })));
 
 const Loading = (): React.ReactElement => (
   <div
@@ -109,6 +113,10 @@ export const router = createBrowserRouter([
       { path: 'data-classification', element: <Suspense fallback={<Loading />}><DataClassificationPage /></Suspense> },
       { path: 'rbac', element: <Suspense fallback={<Loading />}><RbacPage /></Suspense> },
       { path: 'quota', element: <Suspense fallback={<Loading />}><QuotaPage /></Suspense> },
+      { path: 'nodes', element: <Suspense fallback={<Loading />}><NodesListPage /></Suspense> },
+      { path: 'nodes/new', element: <Suspense fallback={<Loading />}><NodesNewPage /></Suspense> },
+      { path: 'nodes/:id/edit', element: <Suspense fallback={<Loading />}><NodesEditPage /></Suspense> },
+      { path: 'nodes/:id/test', element: <Suspense fallback={<Loading />}><NodesTestPage /></Suspense> },
     ],
   },
 

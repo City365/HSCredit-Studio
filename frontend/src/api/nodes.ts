@@ -39,6 +39,25 @@ function buildQueryString(params: Record<string, unknown>): string {
   return qs ? `?${qs}` : '';
 }
 
+export interface NodeMetaUpdate {
+  name?: string;
+  description?: string;
+  icon?: string;
+}
+
+export interface NodeToggleResponse {
+  node_type: string;
+  enabled: boolean;
+  updated_at: string;
+}
+
+export interface SyncResultResponse {
+  synced: number;
+  added: number;
+  updated: number;
+  removed: number;
+}
+
 export const nodesApi = {
   /**
    * 列出节点定义（前端节点库主入口）.
@@ -61,5 +80,41 @@ export const nodesApi = {
    */
   listByCategory: async (category: string): Promise<NodeDefinition[]> => {
     return nodesApi.list({ category, enabled_only: true });
+  },
+
+  // ===== Phase 6 B36: 系统节点管理 =====
+  get: async (nodeType: string): Promise<NodeDefinition> => {
+    const response = await apiClient.get<NodeDefinition>(`/node-definitions/${nodeType}`);
+    return response.data;
+  },
+
+  enable: async (nodeType: string): Promise<NodeToggleResponse> => {
+    const response = await apiClient.put<NodeToggleResponse>(
+      `/node-definitions/${nodeType}/enable`,
+    );
+    return response.data;
+  },
+
+  disable: async (nodeType: string): Promise<NodeToggleResponse> => {
+    const response = await apiClient.put<NodeToggleResponse>(
+      `/node-definitions/${nodeType}/disable`,
+    );
+    return response.data;
+  },
+
+  updateMeta: async (
+    nodeType: string,
+    payload: NodeMetaUpdate,
+  ): Promise<NodeDefinition> => {
+    const response = await apiClient.put<NodeDefinition>(
+      `/node-definitions/${nodeType}/meta`,
+      payload,
+    );
+    return response.data;
+  },
+
+  sync: async (): Promise<SyncResultResponse> => {
+    const response = await apiClient.post<SyncResultResponse>('/node-definitions/sync');
+    return response.data;
   },
 };
