@@ -311,6 +311,9 @@ class CustomNodeTestRun(Base, TimestampMixin, TenantMixin, ModelSerializerMixin)
     """自定义节点测试运行记录.
 
     在 Phase 6 沙箱中执行测试用；这里仅存元数据。
+
+    注意: 实际节点归属通过 ``version_id → custom_node_versions.custom_node_id`` 反查,
+    本表不直接存 ``custom_node_id`` 字段 (避免冗余).
     """
 
     __tablename__ = "custom_node_test_runs"

@@ -653,7 +653,7 @@ async def heartbeat_lock(
 async def record_test_run(
     session: AsyncSession,
     *,
-    custom_node_id: uuid.UUID,
+    custom_node_id: uuid.UUID,  # 保留参数以兼容调用, 但不存表
     tenant_id: uuid.UUID,
     version_id: uuid.UUID,
     triggered_by: uuid.UUID | None,
@@ -661,9 +661,11 @@ async def record_test_run(
     log: str | None,
     duration_ms: int,
 ) -> CustomNodeTestRun:
-    """记录一次试运行."""
+    """记录一次试运行.
+
+    CustomNodeTestRun 表只有 version_id (反查 custom_node_id), 不存 custom_node_id 列.
+    """
     tr = CustomNodeTestRun(
-        custom_node_id=custom_node_id,
         version_id=version_id,
         tenant_id=tenant_id,
         triggered_by=triggered_by,

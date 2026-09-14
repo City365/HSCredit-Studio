@@ -88,7 +88,6 @@ class CustomNodeResponse(BaseModel):
     enabled: bool
     contract: dict[str, Any]
     current_version_number: int | None
-    current_version_id: uuid.UUID | None
     test_run_count: int
     last_test_run_at: datetime | None
     locked_by: uuid.UUID | None

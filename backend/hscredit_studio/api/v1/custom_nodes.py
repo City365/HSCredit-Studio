@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 import uuid
 from typing import Any
 
@@ -35,7 +37,9 @@ from hscredit_studio.api.deps import (
     TenantDep,
     require_role,
 )
+from hscredit_studio.core.exceptions import ResourceNotFoundError, ValidationError
 from hscredit_studio.core.logging import get_logger
+from hscredit_studio.models import CustomNodeVersion
 from hscredit_studio.schemas.custom_node import (
     CustomNodeCreateRequest,
     CustomNodeDraftRequest,
@@ -75,7 +79,6 @@ router = APIRouter(tags=["自定义节点"])
 
 def _to_node_response(cn) -> CustomNodeResponse:
     """手动构造响应 (避免 from_attributes 对 SoftDeleteMixin 等的兼容问题)."""
-    current_v = getattr(cn, "current_version_id", None) or getattr(cn, "current_version_number", None)
     return CustomNodeResponse(
         custom_node_id=cn.custom_node_id,
         tenant_id=cn.tenant_id,
@@ -88,7 +91,6 @@ def _to_node_response(cn) -> CustomNodeResponse:
         enabled=cn.enabled,
         contract=cn.contract or {},
         current_version_number=cn.current_version_number,
-        current_version_id=getattr(cn, "current_version_id", None),
         test_run_count=cn.test_run_count,
         last_test_run_at=cn.last_test_run_at,
         locked_by=cn.locked_by,
@@ -552,7 +554,7 @@ async def detect_contract(
 @router.post(
     "/{custom_node_id}/test",
     response_model=TestRunResponse,
-    summary="沙箱试运行 (阶段 3 实现完整版, 当前 v1 stub)",
+    summary="沙箱试运行 (阶段 3 完整集成)",
 )
 async def test_run(
     session: SessionDep,
@@ -561,22 +563,59 @@ async def test_run(
     custom_node_id: uuid.UUID,
     payload: TestRunRequest,
 ) -> TestRunResponse:
-    """试运行 — 阶段 3 完整沙箱执行 (TODO: stage 3 集成)."""
-    cn = await svc.get_node(session, custom_node_id=custom_node_id, tenant_id=tenant_id)
-    # v1 stub: 仅静态校验 + 记录试运行
-    from hscredit_studio.services.ast_analyzer import validate_user_code
+    """试运行 — 阶段 3 完整沙箱执行.
 
-    result = validate_user_code(cn.code)
-    if not result.valid:
-        # 记录失败
+    流程:
+    1. 静态校验 (AST) — 拦截明显错误
+    2. 解析 version_id (默认 current_version)
+    3. 调 UserSandbox.execute() (subprocess + RestrictedPython + setrlimit)
+    4. 记录 CustomNodeTestRun (状态/日志/资源)
+    5. 返回 outputs / logs / error
+
+    风险:
+    - 当前是子进程沙箱, 不是 Docker. 多租户共用宿主机, 信任度需配合 RBAC.
+    """
+    import time
+    cn = await svc.get_node(session, custom_node_id=custom_node_id, tenant_id=tenant_id)
+
+    # 选 version (默认 current — 通过 version_number 找最新 version_id)
+    version_id = payload.version_id
+    if version_id is None:
+        # 用 current_version_number 找最新版本的 id
+        if cn.current_version_number is None:
+            raise ValidationError("节点没有当前版本, 请先提交代码")
+        version = await session.scalar(
+            select(CustomNodeVersion).where(
+                CustomNodeVersion.custom_node_id == cn.custom_node_id,
+                CustomNodeVersion.version_number == cn.current_version_number,
+            )
+        )
+        if version is None:
+            raise ResourceNotFoundError("无法定位当前版本")
+        version_id = version.version_id
+
+    # 取 version 实际 code (支持回滚后用旧版本试运行)
+    code = cn.code
+    if payload.version_id and payload.version_id != cn.current_version_number:
+        version = await session.get(CustomNodeVersion, version_id)
+        if version is None or version.custom_node_id != cn.custom_node_id:
+            raise ResourceNotFoundError(f"version {version_id} not found")
+        code = version.code
+
+    user_id = _user_id(user)
+
+    # 1. AST 预校验 (快速失败)
+    from hscredit_studio.services.ast_analyzer import validate_user_code
+    ast_result = validate_user_code(code)
+    if not ast_result.valid:
         await svc.record_test_run(
             session,
             custom_node_id=cn.custom_node_id,
             tenant_id=tenant_id,
-            version_id=cn.current_version_id or uuid.uuid4(),
-            triggered_by=_user_id(user),
+            version_id=version_id,
+            triggered_by=user_id,
             status="failed",
-            log="; ".join(f"{i.rule}: {i.message}" for i in result.issues),
+            log="; ".join(f"{i.rule}: {i.message}" for i in ast_result.issues),
             duration_ms=0,
         )
         return TestRunResponse(
@@ -584,19 +623,134 @@ async def test_run(
             status="failed",
             duration_ms=0,
             outputs=None,
-            logs=[f"{i.rule}: {i.message}" for i in result.issues],
+            logs=[f"{i.rule}: {i.message}" for i in ast_result.issues],
             error={"code": "E_VALIDATION_ERROR", "message": "静态校验未通过"},
         )
 
-    # 阶段 3 才会真正调用 UserSandbox.execute
-    # 这里给一个占位返回
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail={
-            "code": "E_NOT_IMPLEMENTED",
-            "message": "试运行沙箱执行在阶段 3 集成, 当前仅做 AST 静态校验",
-        },
+    # 2. 沙箱执行
+    from hscredit_studio.services.user_sandbox import UserSandbox, UserSandboxTimeout, UserSandboxOOM, UserSandboxError
+
+    # 把 sample_data (dict) 注入 sample_inputs (供 DataFrame 端口)
+    final_inputs = dict(payload.sample_inputs or {})
+    if payload.sample_data:
+        # sample_data 一般形如 {columns: [...], rows: [...]} 或 {column_name: value}
+        for key, value in payload.sample_data.items():
+            if key not in final_inputs:
+                final_inputs[key] = value
+
+    # 自定义节点沙箱: 默认 60s timeout 偏长, 试运行用 30s 防止恶意死循环拖住 worker
+    sb = UserSandbox(timeout_sec=30)
+    started = time.monotonic()
+    try:
+        # UserSandbox.execute 是同步方法, 用 to_thread 避免阻塞 event loop
+        outputs, usage = await asyncio.to_thread(
+            sb.execute,
+            code=code,
+            sample_inputs=final_inputs,
+            sample_params=payload.sample_params or {},
+            node_type=cn.node_type,
+        )
+    except UserSandboxTimeout as e:
+        duration_ms = int((time.monotonic() - started) * 1000)
+        await svc.record_test_run(
+            session,
+            custom_node_id=cn.custom_node_id,
+            tenant_id=tenant_id,
+            version_id=version_id,
+            triggered_by=user_id,
+            status="timeout",
+            log=str(e),
+            duration_ms=duration_ms,
+        )
+        return TestRunResponse(
+            test_run_id=uuid.uuid4(),
+            status="timeout",
+            duration_ms=duration_ms,
+            error={"code": "SANDBOX_TIMEOUT", "message": str(e)},
+        )
+    except UserSandboxOOM as e:
+        duration_ms = int((time.monotonic() - started) * 1000)
+        await svc.record_test_run(
+            session,
+            custom_node_id=cn.custom_node_id,
+            tenant_id=tenant_id,
+            version_id=version_id,
+            triggered_by=user_id,
+            status="oom",
+            log=str(e),
+            duration_ms=duration_ms,
+        )
+        return TestRunResponse(
+            test_run_id=uuid.uuid4(),
+            status="oom",
+            duration_ms=duration_ms,
+            error={"code": "SANDBOX_OOM", "message": str(e)},
+        )
+    except Exception as e:
+        duration_ms = int((time.monotonic() - started) * 1000)
+        import traceback as _tb
+        _tb.print_exc(file=_sys.stderr)
+        await svc.record_test_run(
+            session,
+            custom_node_id=cn.custom_node_id,
+            tenant_id=tenant_id,
+            version_id=version_id,
+            triggered_by=user_id,
+            status="failed",
+            log=str(e),
+            duration_ms=duration_ms,
+        )
+        return TestRunResponse(
+            test_run_id=uuid.uuid4(),
+            status="failed",
+            duration_ms=duration_ms,
+            error={"code": "E_SANDBOX_EXECUTION", "message": str(e)},
+        )
+
+    # 3. 处理 outputs (从 sandbox result dict)
+    final_outputs = outputs
+    final_logs: list[str] = []
+    final_error: dict[str, Any] | None = None
+    status = "success"
+    if isinstance(outputs, dict) and "__sandbox_error__" in outputs:
+        # worker 返回的错误 dict
+        err = outputs["__sandbox_error__"]
+        status = "failed"
+        final_outputs = None
+        final_error = {
+            "code": err.get("code", "E_UNKNOWN"),
+            "message": err.get("message", ""),
+            "details": err.get("details", {}),
+        }
+        final_logs.append(f"[{err.get('exception_type', 'Error')}] {err.get('message', '')}")
+
+    duration_ms = int((time.monotonic() - started) * 1000)
+    await svc.record_test_run(
+        session,
+        custom_node_id=cn.custom_node_id,
+        tenant_id=tenant_id,
+        version_id=version_id,
+        triggered_by=user_id,
+        status=status,
+        log="\n".join(final_logs) if final_logs else None,
+        duration_ms=duration_ms,
     )
+
+    try:
+        resp = TestRunResponse(
+            test_run_id=uuid.uuid4(),
+            status=status,
+            duration_ms=duration_ms,
+            outputs=final_outputs,
+            logs=final_logs,
+            resource_usage=usage.to_dict() if usage else None,
+            error=final_error,
+        )
+        return resp
+    except Exception as e:
+        import traceback as _tb
+        _tb.print_exc()
+        raise
 
 
 __all__ = ["router"]
